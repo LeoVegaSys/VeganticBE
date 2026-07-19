@@ -1,9 +1,8 @@
-import os
 import re
-from dotenv import load_dotenv
-from database.db_manager import DatabaseManager
 
-load_dotenv()
+from database.db_manager import DatabaseManager
+from config import DIP_HIGH_UTIL, DIP_MIN_DROP, QA_ROW_LIMIT
+
 
 class DipAgent:
     def __init__(self):
@@ -117,11 +116,11 @@ class DipAgent:
 
         min_drop = self._extract_pct(
             keyword_pattern=r'(?:dip|drop|fell|fall)(?:ped)?\s*(?:of|by)?\s*(?:at least|>=)?', 
-            default=os.environ.get("DIP_MIN_DROP")
+            default=DIP_MIN_DROP
         )
         high_util = self._extract_pct(
             keyword_pattern=r'(?:util(?:ization)?|congest\w*)\s*(?:of|is|at least|above|>=)?', 
-            default=os.environ.get("DIP_HIGH_UTIL")
+            default=DIP_HIGH_UTIL
         ) if want_high_util else None
         window_hours = self._extract_window_hours()
 
@@ -147,7 +146,7 @@ class DipAgent:
         t0 = time.time()
         cur = con.execute(sql, params)
         cols = [d[0] for d in cur.description]
-        rows = cur.fetchmany(os.environ.get("QA_ROW_LIMIT"))
+        rows = cur.fetchmany(QA_ROW_LIMIT)
         data = [{c: (str(v) if hasattr(v, "isoformat") else v) for c, v in zip(cols, r)} for r in rows]
         ms = round((time.time() - t0) * 1000)
         return sql, cols, data, ms, params_used

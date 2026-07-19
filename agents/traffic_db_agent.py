@@ -1,16 +1,13 @@
-import os
-from dotenv import load_dotenv
 from langgraph.types import Command
 
 from database.db_manager import DatabaseManager
 from models.llm_manager import LLMManager_REST
 from utils.skill_loader import get_skills_content
+from config import CHART_INTENT_ALIASES, MCP_DB_TYPE, BUSINESS_FACTS, \
+SUMMARY_MODEL, SQL_MODEL, TRAFFIC_TABLE_NAME, QA_MAX_REPAIRS
 
-load_dotenv()
 
 # Miscellaneous Query Modification Logic
-CHART_INTENT_ALIASES = {"timeseries": "trend", "dip": "ranking"}
-
 def clean_sql(query: str) -> str:
     return query.replace("```sql", "").replace("```", "").strip().rstrip(";").strip()
 
@@ -69,8 +66,8 @@ class TrafficAgent:
     def __init__(self):
         self.db_manager = DatabaseManager()
         self.llm_manager_rest = LLMManager_REST()
-        self.db_type = os.environ.get("DB_TYPE")
-        self.business_facts = get_skills_content(skills_file_name=os.environ.get("QA_BUSINESS_FACTS"))
+        self.db_type = MCP_DB_TYPE
+        self.business_facts = get_skills_content(skills_file_name=BUSINESS_FACTS)
     
 
     def repair_sql(self, state: dict) -> dict:
@@ -107,7 +104,7 @@ class TrafficAgent:
                 bad_sql=state["sql_query"], err=sql_faults
             )
         else:
-            table_name = os.environ.get("TRAFFIC_TABLE_NAME")
+            table_name = TRAFFIC_TABLE_NAME
             lts = self.execute_sql(state, alt_query=link_type_query(table_name=table_name))
             when = self.execute_sql(state, alt_query=max_min_time_query(table_name=table_name))
 
@@ -119,7 +116,7 @@ class TrafficAgent:
         
         sql_response = clean_sql(
             self.llm_manager_rest.call(
-                prompt=prompt, model=os.environ.get("QA_MODEL"), temperature=0.0
+                prompt=prompt, model=SQL_MODEL, temperature=0.0
             ))
     
         if sql_response.strip() == "NOT_ENOUGH_INFO":
@@ -140,7 +137,7 @@ class TrafficAgent:
         try:
             summary = self.llm_manager_rest.call(
                 prompt=sql_summarize_prompt(question, cols, preview),
-                model=os.environ.get("QA_SUM_MODEL"),
+                model=SUMMARY_MODEL,
                 temperature=0.2
             )
         except Exception as e:
@@ -148,13 +145,12 @@ class TrafficAgent:
         return {"summary": summary}
 
     def warmup(self, state: dict) -> dict:
-        max_attempts = int(os.environ.get("QA_MAX_REPAIRS", 1))
         intent = intent_tag(state["question"])
 
         self.llm_manager_rest.call(warmup=True)
         
         return {
-            "repairs_left": max_attempts, 
+            "repairs_left": QA_MAX_REPAIRS, 
             "intent": intent,
             "chart_intent" : CHART_INTENT_ALIASES.get(intent, intent)
         }

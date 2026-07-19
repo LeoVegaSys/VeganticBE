@@ -1,12 +1,12 @@
-import os
 import requests
-from dotenv import load_dotenv
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import ChatOllama
-from mcp_config import STEP_LLMS
 
-load_dotenv()
+from mcp_config import STEP_LLMS
+from config import OLLAMA_KEEP_ALIVE, QA_TIMEOUT, OLLAMA_HOST, \
+OLLAMA_PORT, SQL_MODEL
+
 
 class LLMManager:
     def __init__(self):
@@ -32,12 +32,12 @@ class LLMManager:
 class LLMManager_REST:
     def __init__(self, user_url: str = ""):
         self._stream: bool = False
-        self._keep_alive: str = os.environ.get("OLLAMA_KEEP_ALIVE", "30m")
-        self._timeout: int = int(os.environ.get("QA_TIMEOUT", 180))
-        self._host:str = os.environ.get("OLLAMA_HOST", "localhost")
-        self._port:int = int(os.environ.get("OLLAMA_PORT", 11434))
+        self._keep_alive: str = OLLAMA_KEEP_ALIVE
+        self._timeout: int = QA_TIMEOUT
+        self._host:str = OLLAMA_HOST
+        self._port:int = OLLAMA_PORT
         self._url:str = user_url if user_url else f"http://{self._host}:{self._port}/api/generate"
-        self._model:str = os.environ.get("QA_MODEL")
+        self._model:str = SQL_MODEL
 
     def call(
             self,

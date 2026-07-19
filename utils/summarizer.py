@@ -1,9 +1,8 @@
-import os
 import json
-from dotenv import load_dotenv
+
+from config import SUMMARY_MODEL
 from models.llm_manager import LLMManager_REST
 
-load_dotenv()
 
 def summarize(state: dict):
     preview = json.dumps(state["rows"][:40], default=str)
@@ -18,7 +17,7 @@ ROWS: {preview}
 """
     return LLMManager_REST().call(
         prompt=prompt, 
-        model=os.environ.get("QA_SUM_MODEL"), 
+        model=SUMMARY_MODEL, 
         temperature=0.2
         ).strip()
 

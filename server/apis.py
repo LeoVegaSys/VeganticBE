@@ -1,9 +1,7 @@
-import os
-from dotenv import load_dotenv
-load_dotenv()
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
+from config import MCP_DB_TYPE, LOG_FILE, FEEDBACK_LOG_FILE, SERVER_HOST
 from logs.user_logs import FileLogger
 from graph.graph_manager import WorkflowManager
     
@@ -24,7 +22,7 @@ class ApiServer(BaseHTTPRequestHandler):
                 body = {}
             q = (body.get("question") or "").strip()
             summ = body.get("summarize", True)
-            db_type = body.get("db_type", os.environ.get("MCP_DB_TYPE"))
+            db_type = body.get("db_type", MCP_DB_TYPE)
             # res = WorkflowManager().run_sql_agent(q, summarize_result=summ) if q else {"error": "no question"}
             res = WorkflowManager().run_sql_agent(question=q, db_type=db_type, summarize=summ) if q else {"error": "no question"}
             payload = json.dumps(res, default=str).encode()
@@ -57,9 +55,9 @@ class ApiServer(BaseHTTPRequestHandler):
 
 
 def serve(port):
-    host=os.environ.get("SERVER_HOST","localhost")
+    host=SERVER_HOST
     print(f"Traffic QA serving on http://{host}:{port}/ask      (POST JSON {{'question': ...}})")
     print(f"                  and http://{host}:{port}/feedback (POST JSON {{'request_id','panel_id','rating','comment'}})")
-    print(f'Logging requests to {os.environ.get("QA_LOG_FILE")}')
-    print(f'Logging feedback to {os.environ.get("QA_FEEDBACK_LOG_FILE")}')
+    print(f'Logging requests to {LOG_FILE}')
+    print(f'Logging feedback to {FEEDBACK_LOG_FILE}')
     HTTPServer((host, port), ApiServer).serve_forever()

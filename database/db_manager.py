@@ -1,21 +1,15 @@
-from dotenv import load_dotenv
-load_dotenv()
-
 import requests
-import json
 import asyncio
-import os
 from typing import List, Any
-
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
-# from mcp_config import MCP_CONFIG, MCP_DB_URL
+from config import DB_ENDPOINT_URL, MCP_DB_TYPE
 from utils.mcp import get_mcp_details, parse_mcp_query_response
 
 
 class DatabaseManager:
     def __init__(self):
-        self.endpoint_url = os.getenv("DB_ENDPOINT_URL")
+        self.endpoint_url = DB_ENDPOINT_URL
 
     def get_schema(self, uuid: str) -> str:
         """Retrieve the database schema."""
@@ -39,7 +33,7 @@ class DatabaseManager:
 async def _execute_query(uuid: str, query: str, mcp_server_name: str = ""):
     """ Calls Database MCP server and returns query results"""
     try:
-        mcp_server = mcp_server_name or os.environ.get("MCP_DB_TYPE").lower()
+        mcp_server = mcp_server_name or MCP_DB_TYPE.lower()
 
         mcp_config, mcp_func, mcp_key = get_mcp_details()
         
@@ -56,6 +50,7 @@ async def _execute_query(uuid: str, query: str, mcp_server_name: str = ""):
         err_msg = f"Error encountered while executing query {query} : {str(e)}"
         print(err_msg)
         raise e
+
 
 def _get_schema(uuid: str) -> str:
     return """

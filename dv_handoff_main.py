@@ -1,11 +1,9 @@
-from dotenv import load_dotenv
-load_dotenv()
-
 import os
 import sys
 import json
 import argparse
 
+from config import MCP_DB_PATH, MCP_DB_TYPE, SERVER_PORT
 from graph.graph_manager import WorkflowManager
 from server.apis import serve
 
@@ -25,15 +23,15 @@ def main():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("question", nargs="*")
-    ap.add_argument("--db", default=os.environ.get("DB_PATH"))
-    ap.add_argument("--db-type", default=os.environ.get("MCP_DB_TYPE"))
+    ap.add_argument("--db", default=MCP_DB_PATH)
+    ap.add_argument("--db-type", default=MCP_DB_TYPE)
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--no-summary", action="store_true")
     ap.add_argument("--serve", action="store_true")
-    ap.add_argument("--port", type=int, default=os.environ.get("SERVER_PORT"))
+    ap.add_argument("--port", type=int, default=SERVER_PORT)
     args = ap.parse_args()
     DB_PATH = args.db
-    if not os.path.exists(DB_PATH):
+    if not DB_PATH or not os.path.exists(DB_PATH):
         sys.exit(f"DB not found: {DB_PATH} (set TRAFFIC_DB or --db)")
     if args.serve:
         serve(args.port); return

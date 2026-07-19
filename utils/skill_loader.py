@@ -1,7 +1,5 @@
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
 
 def get_skills_content(skills_file_name : str, skills_folder_name: str = "skills") -> str:
     _FALLBACK_BUSINESS_FACTS = """\

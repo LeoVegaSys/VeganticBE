@@ -17,7 +17,7 @@ def get_mcp_details():
 def parse_mcp_query_response(mcp_result: Union[list, dict, str, None]):
     """
     Parse MCP Tool Query Execution response
-    Expected structure:
+    Expected mcp_result structure:
     [
         {'type': 'text', 
         'text': '{
