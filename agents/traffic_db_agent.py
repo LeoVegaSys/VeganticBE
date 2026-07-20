@@ -1,8 +1,11 @@
+import json
+
 from langgraph.types import Command
 
 from database.db_manager import DatabaseManager
 from models.llm_manager import LLMManager_REST
 from utils.skill_loader import get_skills_content
+from utils.summarizer import get_summarize_prompt, fallback_summarize
 from config import CHART_INTENT_ALIASES, MCP_DB_TYPE, BUSINESS_FACTS, \
 SUMMARY_MODEL, SQL_MODEL, TRAFFIC_TABLE_NAME, QA_MAX_REPAIRS
 
@@ -20,11 +23,6 @@ def intent_tag(q):
     if any(w in ql for w in ("over time", "trend", "by time", "each hour", "timeline")): return "timeseries"
     return "lookup"
 
-def max_min_time_query(table_name: str) -> str:
-    return f'SELECT MIN("Time"), MAX("Time") FROM {table_name}'
-
-def link_type_query(table_name: str) -> str:
-    return f'SELECT DISTINCT "LinkType" FROM {table_name}'
 
 def sql_generate_prompt(db_type, business_facts, table_name, schema, lts, when, question):
     return f"""You are an expert telecom analyst writing {db_type} SQL.
@@ -50,23 +48,10 @@ If there is not enough information to write a SQL query, respond with "NOT_ENOUG
 Corrected SQL:"""
 
 
-def sql_summarize_prompt(question, cols, preview):
-    return f"""You are a telecom NOC analyst. Answer the question from the result ONLY.
-Respond in ENGLISH, 2-4 sentences. Name the key entities with their numbers.
-Convert Kbps to Mbps/Gbps when large. Flag utilization > 100 as a likely stale-BW issue.
-Do not restate the whole table or explain the SQL.
-
-QUESTION: {question}
-COLUMNS: {cols}
-ROWS: {preview}
-"""
-
-
 class TrafficAgent:
     def __init__(self):
         self.db_manager = DatabaseManager()
         self.llm_manager_rest = LLMManager_REST()
-        self.db_type = MCP_DB_TYPE
         self.business_facts = get_skills_content(skills_file_name=BUSINESS_FACTS)
     
 
@@ -87,10 +72,38 @@ class TrafficAgent:
         )
     
 
+    def _get_schema(self) -> str:
+        """ 
+        Returns comma-separated string of concatenated column names and their datatypes 
+        """
+        query = f"SELECT column_name, data_type FROM information_schema.columns \
+        WHERE table_name = '{TRAFFIC_TABLE_NAME}' ORDER BY ordinal_position"
+        result = self.db_manager.execute_query(uuid=self.request_id, query=query)
+        return ", ".join(f'"{c}" {t}' for c, t in json.loads(result[0]['text'])["rows"])
+    
+
+    def _get_link_types(self) -> list:
+        """ Returns list of valid link types """
+        query = f'SELECT DISTINCT "LinkType" FROM {TRAFFIC_TABLE_NAME}'
+        result = self.db_manager.execute_query(uuid=self.request_id, query=query)
+        return [r[0] for r in result["rows"] if r[0]]
+    
+    
+    def _get_max_min_time(self) -> str:
+        """ Returns max and min time if available else n/a """
+        query = f'SELECT MIN("Time"), MAX("Time") FROM {TRAFFIC_TABLE_NAME}'
+        try:
+            result = self.db_manager.execute_query(uuid=self.request_id, query=query)
+            min, max = result["rows"][0]
+            return f"{min} -> {max}"
+        except Exception as e:
+            return "n/a"
+        
+
     def generate_sql(self, state: dict) -> dict:
         """Create/Corrects SQL query for provided user question"""
         question = state["question"]
-        self.schema = self.db_manager.get_schema(uuid=state["request_id"])
+        schema = self._get_schema()
         do_repair = False   #Manages SQL correction
 
         if state["sql_query"] and (state["error"] or state["sql_issues"]):
@@ -99,18 +112,17 @@ class TrafficAgent:
 
         if do_repair:
             prompt = sql_repair_prompt(
-                db_type=self.db_type, business_facts=self.business_facts,
-                schema=self.schema, question=question,
+                db_type=MCP_DB_TYPE, business_facts=self.business_facts,
+                schema=schema, question=question,
                 bad_sql=state["sql_query"], err=sql_faults
             )
         else:
-            table_name = TRAFFIC_TABLE_NAME
-            lts = self.execute_sql(state, alt_query=link_type_query(table_name=table_name))
-            when = self.execute_sql(state, alt_query=max_min_time_query(table_name=table_name))
+            lts = self._get_link_types()
+            when = self._get_max_min_time()
 
             prompt = sql_generate_prompt(
-                db_type=self.db_type, business_facts=self.business_facts,
-                table_name=table_name, schema=self.schema,
+                db_type=MCP_DB_TYPE, business_facts=self.business_facts,
+                table_name=TRAFFIC_TABLE_NAME, schema=schema,
                 lts=lts, when=when, question=question,
             )
         
@@ -127,22 +139,19 @@ class TrafficAgent:
 
     def summarize(self, state: dict) -> dict:
         """Provide summary for user question"""
-        question = state["question"]
         if state["sql_query"] == "NOT_RELEVANT":
-            return {"answer": f'Sorry, Please provide additional information. Original question : {question}'}
-
-        #Dummy placeholders
-        cols = preview = []
+            return {"summary": f'Sorry, Please provide additional information. Original question : {state["question"]}'}
 
         try:
             summary = self.llm_manager_rest.call(
-                prompt=sql_summarize_prompt(question, cols, preview),
+                prompt=get_summarize_prompt(state),
                 model=SUMMARY_MODEL,
                 temperature=0.2
             )
         except Exception as e:
-            summary = f"LLM summary unavailable. Issue encountered : {e}"
+            summary = fallback_summarize(state["rows"]) + f"\nLLM summary unavailable. Issue encountered : {e}"
         return {"summary": summary}
+
 
     def warmup(self, state: dict) -> dict:
         intent = intent_tag(state["question"])
@@ -158,31 +167,26 @@ class TrafficAgent:
 
     def run_sql(self, state: dict, query: str) -> dict:
         """Execute query"""
-        query = state["sql_query"].lower().lstrip()
-        if state["sql_query"] == "NOT_RELEVANT":
+        query = state["sql_query"]
+        _lquery = query.lower().lstrip()
+        if query == "NOT_RELEVANT":
             return {"sql_valid": False}
         
-        if not (query.startswith("select") or query.startswith("with")):
+        if not (_lquery.startswith("select") or _lquery.startswith("with")):
             return {
                 "sql_valid": False,
                 "sql_issues": "Only read-only SELECT/WITH queries are allowed."
             }
         
         try:
-            result = self.execute_sql(state)
-            return {"sql_valid": True, "results": result}
+            result = self.db_manager.execute_query(uuid=state['request_id'], 
+                                                   query=query)
+            return {
+                "sql_valid": True, 
+                "results": result["rows"],
+                "row_count": result["rowCount"],
+                "columns": result["columns"]
+                }
         except Exception as e:
             return {"error": str(e)}
     
-
-    def execute_sql(self, state: dict, alt_query: str = None) -> dict:
-        """Execute SQL query and return results."""
-        print(f"execute_sql :: state : {state} :: alt query :: {alt_query}")
-        query = alt_query if alt_query else state['sql_query']
-        uuid = state['request_id']
-        try:
-            results = self.db_manager.execute_query(uuid, query)    
-            return results
-        except Exception as e:
-            # return {"error": str(e)}
-            raise e

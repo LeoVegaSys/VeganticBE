@@ -1,18 +1,16 @@
 import re
 
 from database.db_manager import DatabaseManager
-from config import DIP_HIGH_UTIL, DIP_MIN_DROP, QA_ROW_LIMIT
-
+from config import DIP_HIGH_UTIL, DIP_MIN_DROP, SUMMARY_MODEL, TRAFFIC_TABLE_NAME
+from utils.summarizer import get_summarize_prompt, fallback_summarize
 
 class DipAgent:
     def __init__(self):
         self.dbm = DatabaseManager()
         #TODO Create connection to required database
 
-    def _get_schema_context(self):
-        pass
 
-    def _get_dip_sql_query(self, window_hours, linktype_filter, util_filter):
+    def _get_dip_sql_query(self, window_hours, linktype_filter, util_filter, min_drop, limit):
         return f'''WITH data_end AS (SELECT MAX("Time") AS t FROM traffic),
     windowed AS (
         SELECT "Node Name", "Interface Name", "LinkType", "BW(Kb)", "Time",
@@ -50,19 +48,29 @@ class DipAgent:
     ON b."Node Name" = c."Node Name" AND b."Interface Name" = c."Interface Name"
     WHERE b.baseline_val > 0
     AND (b.baseline_val - GREATEST(c."In Traffic (Kbps)", c."Out Traffic (Kbps)"))
-        / NULLIF(b.baseline_val, 0) * 100 >= ?
+        / NULLIF(b.baseline_val, 0) * 100 >= {min_drop}
     {util_filter}
     ORDER BY "Dip %" DESC
-    LIMIT ?'''
+    LIMIT {limit}'''
+
+
+    def _get_link_types(self) -> list:
+        """ Returns list of valid link types """
+        query = f'SELECT DISTINCT "LinkType" FROM {TRAFFIC_TABLE_NAME}'
+        result = self.dbm.execute_query(uuid=self.request_id, query=query)
+        return [r[0] for r in result["rows"] if r[0]]
+    
 
     def _extract_limit(self, default=10):
         m = re.search(r'\b(?:limit|top)\s*(\d+)\b', self.qn_low)
         return int(m.group(1)) if m else default
     
 
-    def _extract_linktype(self, valid_linktypes):
+    def _extract_linktype(self):
         if "all linktype" in self.qn_low or "across all" in self.qn_low:
             return None
+        
+        valid_linktypes = self._get_link_types()
         for lt in valid_linktypes:
             if lt and lt.lower() in self.qn_low:
                 return lt
@@ -95,6 +103,23 @@ class DipAgent:
         return default
 
     
+    def summarize(self, state: dict) -> dict:
+        """Provide additional summary"""
+        
+        if state["summarize"]:
+            try:
+                summary = self.llm_manager_rest.call(
+                    prompt=get_summarize_prompt(state),
+                    model=SUMMARY_MODEL,
+                    temperature=0.2
+                )
+            except Exception as e:
+                summary = fallback_summarize(state["rows"])
+                summary += f"\nLLM summary unavailable. Issue encountered : {e}"
+            return {"summary": summary}
+        return {}
+
+
     def dip_detect(self, state: dict):
         """Find interfaces whose latest sample dropped sharply vs their own recent
         baseline (baseline = avg of earlier samples within the window, excluding
@@ -106,14 +131,17 @@ class DipAgent:
         the question text; effective values used are returned in `params_used`
         so the caller/frontend can show exactly what filter was applied.
         Returns (sql, cols, rows, ms, params_used)."""
+
+        self.request_id = state['request_id']
         self.question = state['question']
         self.qn_low = self.question.lower()
 
-        _, lts, _ = self._get_schema_context(con)
+        ### Parameters calculation ###
         limit = self._extract_limit()
-        linktype = self._extract_linktype(valid_linktypes=lts)
-        want_high_util = any(w in self.qn_low for w in ("util", "congest", "high", "capacity"))
+        linktype = self._extract_linktype()
+        window_hours = self._extract_window_hours()
 
+        want_high_util = any(w in self.qn_low for w in ("util", "congest", "high", "capacity"))
         min_drop = self._extract_pct(
             keyword_pattern=r'(?:dip|drop|fell|fall)(?:ped)?\s*(?:of|by)?\s*(?:at least|>=)?', 
             default=DIP_MIN_DROP
@@ -122,31 +150,26 @@ class DipAgent:
             keyword_pattern=r'(?:util(?:ization)?|congest\w*)\s*(?:of|is|at least|above|>=)?', 
             default=DIP_HIGH_UTIL
         ) if want_high_util else None
-        window_hours = self._extract_window_hours()
-
-        linktype_filter = 'AND "LinkType" = ?' if linktype else ""
-        util_filter = ('AND GREATEST(c."In Traffic (Kbps)", c."Out Traffic (Kbps)") '
-                    '/ NULLIF(c."BW(Kb)", 0) * 100 >= ?') if want_high_util else ""
+        
+        linktype_filter = f'AND "LinkType" = {linktype}' if linktype else ""
+        util_filter = f'AND GREATEST(c."In Traffic (Kbps)", c."Out Traffic (Kbps)") \
+                     NULLIF(c."BW(Kb)", 0) * 100 >= {high_util}' if want_high_util else ""
 
         # Window is measured from the DATASET's own latest sample, not wall-clock
         # now() -- this dataset is historical/fixed, not a live stream.
-        sql = self._get_dip_sql_query(window_hours, linktype_filter, util_filter)
+        sql = self._get_dip_sql_query(window_hours, linktype_filter, util_filter, min_drop, limit)
+        result = self.dbm.execute_query(uuid=self.request_id, query=sql)
 
-        params = []
-        if linktype: params.append(linktype)
-        params.append(min_drop)
-        if want_high_util: params.append(high_util)
-        params.append(limit)
-
-        params_used = {"min_drop_pct": min_drop, "window_hours": window_hours,
-                    "linktype": linktype or "ALL", "limit": limit}
-        if want_high_util:
-            params_used["high_util_pct"] = high_util
-
-        t0 = time.time()
-        cur = con.execute(sql, params)
-        cols = [d[0] for d in cur.description]
-        rows = cur.fetchmany(QA_ROW_LIMIT)
-        data = [{c: (str(v) if hasattr(v, "isoformat") else v) for c, v in zip(cols, r)} for r in rows]
-        ms = round((time.time() - t0) * 1000)
-        return sql, cols, data, ms, params_used
+        summary = ""
+        if not result["rows"]:
+            extra = f" and current utilization >= {high_util:.0f}%" if high_util else ""
+            summary = (
+                f"No interfaces found with a dip of at least {min_drop:.0f}% vs their baseline \
+                last {window_hours}h, linktype={linktype or 'ALL'}{extra}.")
+            
+        return {
+            "summary" : summary,
+            "row_count": result["rowCount"],
+            "results": result["rows"],
+            "columns": result["columns"],
+            }

@@ -21,11 +21,12 @@ class OutputState(TypedDict):
     sql_valid: bool
     sql_issues: str
     results: List[Any]
-    answer: Annotated[str, operator.add]
+    summary: Annotated[str, operator.add]
     error: str
     visualization: Annotated[str, operator.add]
     visualization_reason: Annotated[str, operator.add]
     formatted_data_for_visualization: Dict[str, Any]
     intent: str
     chart_intent: str
-    sql_row_count: int
+    row_count: int
+    columns: List[str]

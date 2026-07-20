@@ -38,5 +38,4 @@ class TrafficWorkflowManager:
             "request_id": result["request_id"],
             "results": result['results'],
             "summary": result["summary"],
-            "answer": result["answer"],
         }

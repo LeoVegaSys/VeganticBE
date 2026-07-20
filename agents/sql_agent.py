@@ -227,7 +227,7 @@ For example:
         results = state['results']
 
         if results == "NOT_RELEVANT":
-            return {"answer": "Sorry, I can only give answers relevant to the database."}
+            return {"summary": "Sorry, I can only give answers relevant to the database."}
 
         prompt = ChatPromptTemplate.from_messages([
             ("system", "You are an AI assistant that formats database query results into a human-readable response. Give a conclusion to the user's question based on the query results. Do not give the answer in markdown format. Only give the answer in one line."),
@@ -235,7 +235,7 @@ For example:
         ])
 
         response = self.llm_manager.invoke(prompt, step_name="execute_sql", question=question, results=results)
-        return {"answer": response}
+        return {"summary": response}
 
     def choose_visualization(self, state: dict) -> dict:
         """Choose an appropriate visualization for the data."""

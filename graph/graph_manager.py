@@ -1,4 +1,4 @@
-import uuid
+from uuid import uuid4
 from langgraph.graph import StateGraph
 from state.state import InputState, OutputState
 from agents.sql_agent import SQLAgent
@@ -45,6 +45,7 @@ class WorkflowManager:
 
         # Deterministic non-LLM-using
         workflow.add_node("calculate_dip", self.dip_agent.dip_detect)
+        workflow.add_node("summarize_dip", self.dip_agent.summarize)
 
         # LLM-using
         workflow.add_node("parse_question", self.sql_agent.parse_question)
@@ -58,6 +59,9 @@ class WorkflowManager:
         
         # Define edges
         workflow.add_conditional_edges(START, get_query_type)
+
+        workflow.add_edge("calculate_dip", "summarize_dip")
+        workflow.add_edge("summarize_dip", END)
 
         workflow.add_edge("parse_question", "get_unique_nouns")
         workflow.add_edge("get_unique_nouns", "generate_sql")
@@ -79,10 +83,10 @@ class WorkflowManager:
     def run_sql_agent(self, question: str, db_type:str, summarize: bool = False, uuid: str = "") -> dict:
         """Run the SQL agent workflow and return the formatted answer and visualization recommendation."""
         app = self.create_workflow().compile()
-        _uuid = uuid if uuid else uuid.uuid4().hex[:12]
+        _uuid = uuid or uuid4().hex[:12]
         return app.invoke({"question": question, "uuid": _uuid, "summarize": summarize, "mcp_server": db_type})
         # return {
-        #     "answer": result['answer'],
+        #     "summary": result['summary'],
         #     "visualization": result['visualization'],
         #     "visualization_reason": result['visualization_reason'],
         #     "formatted_data_for_visualization": result['formatted_data_for_visualization']
