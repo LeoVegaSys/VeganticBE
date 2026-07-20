@@ -2,6 +2,7 @@ import requests
 import asyncio
 from typing import List, Any
 from langchain_mcp_adapters.client import MultiServerMCPClient
+from langchain_mcp_adapters.tools import load_mcp_tools
 
 from config import DB_ENDPOINT_URL, MCP_DB_TYPE
 from utils.mcp import get_mcp_details, parse_mcp_query_response
@@ -38,13 +39,17 @@ async def _execute_query(uuid: str, query: str, mcp_server_name: str = ""):
         mcp_config, mcp_func, mcp_key = get_mcp_details()
         
         mcp_client = MultiServerMCPClient(mcp_config)
+
+        async with mcp_client.session(server_name=mcp_server) as session:
         # Get tools
-        tools = await mcp_client.get_tools(server_name=mcp_server)
-        run_tool = next(t for t in tools if t.name==mcp_func[mcp_server])
-        # result = await mcp_client.call_tool("run_query", query)
-        result=await run_tool.ainvoke({ mcp_key[mcp_server]: query })
+          # tools = await mcp_client.get_tools(server_name=mcp_server)
+          tools = await load_mcp_tools(session)
+          run_tool = next(t for t in tools if t.name==mcp_func[mcp_server])
+          # result = await mcp_client.call_tool("run_query", query)
+          result=await run_tool.ainvoke({ mcp_key[mcp_server]: query })
+
         print(f"Result: {result}")
-        return result
+        return parse_mcp_query_response(result)
 
     except Exception as e :
         err_msg = f"Error encountered while executing query {query} : {str(e)}"
