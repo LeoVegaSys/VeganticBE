@@ -111,6 +111,7 @@ class TrafficAgent:
 
         if "sql_query" in state and state["sql_query"] and (state["error"] or state["sql_issues"]):
             sql_faults = f'{state["error"]}\nIssues:{state["sql_issues"]}\n'
+            print(f"\ntraffic_agent :: generate_sql :: sql_faults :: {sql_faults}")
             do_repair = True
 
         if do_repair:
@@ -129,6 +130,7 @@ class TrafficAgent:
                 lts=lts, when=when, question=question,
             )
         
+        print(f"\ntraffic_agent :: generate_sql :: do_repair :: {do_repair} :: prompt :: {prompt}")
         sql_response = clean_sql(
             self.llm_manager_rest.call(
                 prompt=prompt, model=SQL_MODEL, temperature=0.0

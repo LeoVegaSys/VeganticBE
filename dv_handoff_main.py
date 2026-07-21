@@ -48,7 +48,7 @@ def main():
             if q: print(graph.run_sql_agent(q, args.db_type, not args.no_summary))
         return
     # res = answer(q, not args.no_summary)
-    res = graph.run_sql_agent(q, args.db_type)
+    res = graph.run_sql_agent(q, args.db_type, not args.no_summary)
     print(json.dumps(res, indent=2, default=str) if args.json else None) if args.json else print(res)
 
 
