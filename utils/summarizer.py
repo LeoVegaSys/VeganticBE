@@ -2,7 +2,7 @@ import json
 
 
 def get_summarize_prompt(state: dict) -> str:
-    preview = json.dumps(state["rows"][:40], default=str)
+    preview = json.dumps(state["results"][:40], default=str)
 
     return f"""You are a telecom NOC analyst. Answer the question from the result ONLY.
 Respond in ENGLISH, 2-4 sentences. Name the key entities with their numbers.

@@ -143,6 +143,8 @@ class TrafficAgent:
     def summarize(self, state: dict) -> dict:
         """Provide summary for user question"""
         print(f"traffic_agent :: summarize :: state :: {state}")
+        if not state["summarize"]:
+            return 
         if state["sql_query"] == "NOT_RELEVANT":
             return {"summary": f'Sorry, Please provide additional information. Original question : {state["question"]}'}
 
@@ -153,7 +155,7 @@ class TrafficAgent:
                 temperature=0.2
             )
         except Exception as e:
-            summary = fallback_summarize(state["rows"]) + f"\nLLM summary unavailable. Issue encountered : {e}"
+            summary = fallback_summarize(state["results"]) + f"\nLLM summary unavailable. Issue encountered : {e}"
         return {"summary": summary}
 
 
@@ -170,7 +172,7 @@ class TrafficAgent:
         }
     
 
-    def run_sql(self, state: dict, query: str) -> dict:
+    def run_sql(self, state: dict) -> dict:
         """Execute query"""
         print(f"traffic_agent :: run_sql :: state :: {state}")
         query = state["sql_query"]

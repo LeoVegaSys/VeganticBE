@@ -27,9 +27,11 @@ def get_query_type(state: dict) -> str:
 
 def call_traffic_graph(state: InputState):
     print(f"call_traffic_graph :: state :: {state}")
-    return TrafficWorkflowManager().run_traffic_agent(
+    result = TrafficWorkflowManager().run_traffic_agent(
         question=state["question"], summarize=state["summarize"], 
         request_id=state["uuid"], mcp_server=state["mcp_server"])
+    print(f"trafficGraph :: call_traffic_graph :: result :: {result}")
+    return result
 
 
 class WorkflowManager:
@@ -87,7 +89,9 @@ class WorkflowManager:
         print(f"Graph :: run_sql_agent :: Q {question} :: DT {db_type} :: SMR {summarize} :: ID {uuid}")
         app = self.create_workflow().compile()
         _uuid = uuid or uuid4().hex[:12]
-        return app.invoke({"question": question, "uuid": _uuid, "summarize": summarize, "mcp_server": db_type})
+        result =  app.invoke({"question": question, "uuid": _uuid, "summarize": summarize, "mcp_server": db_type})
+        print(f"graph :: run_sql_agent :: result :: {result}")
+        return result
         # return {
         #     "summary": result['summary'],
         #     "visualization": result['visualization'],

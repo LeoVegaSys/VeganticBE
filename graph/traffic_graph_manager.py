@@ -35,6 +35,8 @@ class TrafficWorkflowManager:
         result = app.invoke(
             {"question": question, "summarize": summarize, "request_id": request_id, "mcp_server":mcp_server}
         )
+        print(f"run_traffic_agent :: result :: {result}")
+        return result
         return {
             "request_id": result["request_id"],
             "results": result['results'],
