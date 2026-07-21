@@ -133,7 +133,7 @@ class DipAgent:
         so the caller/frontend can show exactly what filter was applied.
         Returns (sql, cols, rows, ms, params_used)."""
         print(f"\ndip_agent :: dip_detect :: state :: {state}")
-        self.request_id = state['request_id']
+        self.request_id = state['uuid']
         self.question = state['question']
         self.qn_low = self.question.lower()
 
