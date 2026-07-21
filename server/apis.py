@@ -21,10 +21,10 @@ class ApiServer(BaseHTTPRequestHandler):
             except Exception:
                 body = {}
             q = (body.get("question") or "").strip()
-            summ = body.get("summarize", True)
+            summ = body.get("no_summary", True)
             db_type = body.get("db_type", MCP_DB_TYPE)
             # res = WorkflowManager().run_sql_agent(q, summarize_result=summ) if q else {"error": "no question"}
-            res = WorkflowManager().run_sql_agent(question=q, db_type=db_type, summarize=summ) if q else {"error": "no question"}
+            res = WorkflowManager().run_sql_agent(question=q, db_type=db_type, summarize=not summ) if q else {"error": "no question"}
             payload = json.dumps(res, default=str).encode()
             try:
                 self.send_response(200); self.send_header("Content-Type", "application/json")
