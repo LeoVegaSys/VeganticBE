@@ -12,6 +12,8 @@ class InputState(TypedDict):
     results: List[Any]
     visualization: Annotated[str, operator.add]
     summarize: bool
+    row_count: int
+    columns: List[str]
 
 class OutputState(TypedDict):
     uuid: str
