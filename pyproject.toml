@@ -11,5 +11,6 @@ dependencies = [
     "langchain-mcp-adapters>=0.2.2",
     "langchain-ollama>=1.1.0",
     "langgraph-swarm>=0.1.0",
+    "mcp-server-motherduck>=1.0.7",
     "python-dotenv>=1.2.2",
 ]

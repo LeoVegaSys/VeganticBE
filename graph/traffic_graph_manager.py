@@ -30,12 +30,12 @@ class TrafficWorkflowManager:
         return self.create_workflow().compile()
     
     def run_traffic_agent(self, question: str, mcp_server:str, summarize: bool, request_id: str) -> dict:
-        print(f"TrafficGraph :: run_sql_agent :: Q {question} :: DT {mcp_server} :: SMR {summarize} :: ID {request_id}")
+        print(f"\nTrafficGraph :: run_traffic_agent :: Q {question} :: DT {mcp_server} :: SMR {summarize} :: ID {request_id}")
         app = self.create_workflow().compile()
         result = app.invoke(
             {"question": question, "summarize": summarize, "request_id": request_id, "mcp_server":mcp_server}
         )
-        print(f"run_traffic_agent :: result :: {result}")
+        print(f"\nrun_traffic_agent :: result :: {result}")
         return result
         return {
             "request_id": result["request_id"],

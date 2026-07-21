@@ -16,7 +16,7 @@ DIP_KEYWORDS = ("dip", "dips", "dipped", "drop", "dropped", "surge", "spike",
 
 # Sub-graph router
 def get_query_type(state: dict) -> str:
-    print(f"get_query_type :: state :: {state}")
+    print(f"\nget_query_type :: state :: {state}")
     query = state['question'].lower()
     if any(w in query for w in DIP_KEYWORDS):
         return "calculate_dip"
@@ -26,11 +26,11 @@ def get_query_type(state: dict) -> str:
 
 
 def call_traffic_graph(state: InputState):
-    print(f"call_traffic_graph :: state :: {state}")
+    print(f"\ncall_traffic_graph :: state :: {state}")
     result = TrafficWorkflowManager().run_traffic_agent(
         question=state["question"], summarize=state["summarize"], 
         request_id=state["uuid"], mcp_server=state["mcp_server"])
-    print(f"trafficGraph :: call_traffic_graph :: result :: {result}")
+    print(f"\ntrafficGraph :: call_traffic_graph :: result :: {result}")
     return result
 
 
@@ -86,11 +86,11 @@ class WorkflowManager:
 
     def run_sql_agent(self, question: str, db_type:str, summarize: bool = False, uuid: str = "") -> dict:
         """Run the SQL agent workflow and return the formatted answer and visualization recommendation."""
-        print(f"Graph :: run_sql_agent :: Q {question} :: DT {db_type} :: SMR {summarize} :: ID {uuid}")
+        print(f"\nGraph :: run_sql_agent :: Q {question} :: DT {db_type} :: SMR {summarize} :: ID {uuid}")
         app = self.create_workflow().compile()
         _uuid = uuid or uuid4().hex[:12]
         result =  app.invoke({"question": question, "uuid": _uuid, "summarize": summarize, "mcp_server": db_type})
-        print(f"graph :: run_sql_agent :: result :: {result}")
+        print(f"\ngraph :: run_sql_agent :: result :: {result}")
         return result
         # return {
         #     "summary": result['summary'],

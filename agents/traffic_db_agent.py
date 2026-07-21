@@ -57,7 +57,7 @@ class TrafficAgent:
 
     def repair_sql(self, state: dict) -> dict:
         """Validate and fix SQL"""
-        print(f"traffic_agent :: repair_sql :: state :: {state}")
+        print(f"\ntraffic_agent :: repair_sql :: state :: {state}")
         retries = state["repairs_left"]
         ### If retries are left or issues raised in prior run, rerun loop at generate sql func
         has_sql_faults = state["sql_issues"] or state["error"]
@@ -103,7 +103,7 @@ class TrafficAgent:
 
     def generate_sql(self, state: dict) -> dict:
         """Create/Corrects SQL query for provided user question"""
-        print(f"traffic_agent :: generate_sql :: state :: {state}")
+        print(f"\ntraffic_agent :: generate_sql :: state :: {state}")
         self.request_id = state["request_id"]
         question = state["question"]
         schema = self._get_schema()
@@ -142,7 +142,7 @@ class TrafficAgent:
 
     def summarize(self, state: dict) -> dict:
         """Provide summary for user question"""
-        print(f"traffic_agent :: summarize :: state :: {state}")
+        print(f"\ntraffic_agent :: summarize :: state :: {state}")
         if not state["summarize"]:
             return 
         if state["sql_query"] == "NOT_RELEVANT":
@@ -160,7 +160,7 @@ class TrafficAgent:
 
 
     def warmup(self, state: dict) -> dict:
-        print(f"traffic_agent :: warmup :: state :: {state}")
+        print(f"\ntraffic_agent :: warmup :: state :: {state}")
         intent = intent_tag(state["question"])
 
         self.llm_manager_rest.call(warmup=True)
@@ -174,7 +174,7 @@ class TrafficAgent:
 
     def run_sql(self, state: dict) -> dict:
         """Execute query"""
-        print(f"traffic_agent :: run_sql :: state :: {state}")
+        print(f"\ntraffic_agent :: run_sql :: state :: {state}")
         query = state["sql_query"]
         _lquery = query.lower().lstrip()
         if query == "NOT_RELEVANT":

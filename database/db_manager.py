@@ -26,7 +26,7 @@ class DatabaseManager:
 
     def execute_query(self, uuid: str, query: str) -> List[Any]:
         """Execute SQL query on the remote database and return results.""" 
-        print(f"DBM :: Q {query} :: ID {uuid} :: DT {MCP_DB_TYPE}")
+        print(f"\nDBM :: Q {query} :: ID {uuid} :: DT {MCP_DB_TYPE}")
         result=asyncio.run(_execute_query(uuid, query))
         return result
 
@@ -48,7 +48,7 @@ async def _execute_query(uuid: str, query: str, mcp_server_name: str = ""):
           # result = await mcp_client.call_tool("run_query", query)
           result=await run_tool.ainvoke({ mcp_key[mcp_server]: query })
 
-        print(f"DBM :: _execute_query :: Result: {result}")
+        print(f"\nDBM :: _execute_query :: Result: {result}")
         return parse_mcp_query_response(result)
 
     except Exception as e :
