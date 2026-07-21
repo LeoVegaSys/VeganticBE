@@ -1,12 +1,14 @@
 import re
 
 from database.db_manager import DatabaseManager
+from models.llm_manager import LLMManager_REST
 from config import DIP_HIGH_UTIL, DIP_MIN_DROP, SUMMARY_MODEL, TRAFFIC_TABLE_NAME
 from utils.summarizer import get_summarize_prompt, fallback_summarize
 
 class DipAgent:
     def __init__(self):
         self.dbm = DatabaseManager()
+        self.llm_manager_rest = LLMManager_REST()
         #TODO Create connection to required database
 
 
@@ -115,7 +117,7 @@ class DipAgent:
                     temperature=0.2
                 )
             except Exception as e:
-                summary = fallback_summarize(state["rows"])
+                summary = fallback_summarize(state["results"])
                 summary += f"\nLLM summary unavailable. Issue encountered : {e}"
             return {"summary": summary}
         return {}
