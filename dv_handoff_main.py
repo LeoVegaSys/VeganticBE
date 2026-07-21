@@ -30,6 +30,7 @@ def main():
     ap.add_argument("--serve", action="store_true")
     ap.add_argument("--port", type=int, default=SERVER_PORT)
     args = ap.parse_args()
+    print(f"args :: {args}")
     DB_PATH = args.db
     if not DB_PATH or not os.path.exists(DB_PATH):
         sys.exit(f"DB not found: {DB_PATH} (set TRAFFIC_DB or --db)")
@@ -44,10 +45,10 @@ def main():
             except (EOFError, KeyboardInterrupt): break
             if q.lower() in ("exit", "quit"): break
             # if q: _print_human(answer(q, not args.no_summary))
-            if q: print(graph.run_sql_agent(q, not args.no_summary))
+            if q: print(graph.run_sql_agent(q, args.db_type, not args.no_summary))
         return
     # res = answer(q, not args.no_summary)
-    res = graph.run_sql_agent(q)
+    res = graph.run_sql_agent(q, args.db_type)
     print(json.dumps(res, indent=2, default=str) if args.json else None) if args.json else print(res)
 
 

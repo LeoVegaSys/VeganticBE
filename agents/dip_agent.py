@@ -106,6 +106,7 @@ class DipAgent:
     def summarize(self, state: dict) -> dict:
         """Provide additional summary"""
         
+        print(f"dip_agent :: summarize :: state :: {state}")
         if state["summarize"]:
             try:
                 summary = self.llm_manager_rest.call(
@@ -131,7 +132,7 @@ class DipAgent:
         the question text; effective values used are returned in `params_used`
         so the caller/frontend can show exactly what filter was applied.
         Returns (sql, cols, rows, ms, params_used)."""
-
+        print(f"dip_agent :: dip_detect :: state :: {state}")
         self.request_id = state['request_id']
         self.question = state['question']
         self.qn_low = self.question.lower()

@@ -33,7 +33,7 @@ MCP_CONFIG={
     "duckdb":{
         "server": {
                 "command": "uvx",
-                "args": ["mcp-server-motherduck", "--db-path", "./data/duckdb/traffic.db", "--readonly"],
+                "args": ["mcp-server-motherduck", "--db-path", "./data/duckdb/traffic.db"],
                 "transport": "stdio"
             },
         "query_function": "execute_query",

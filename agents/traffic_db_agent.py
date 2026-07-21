@@ -57,6 +57,7 @@ class TrafficAgent:
 
     def repair_sql(self, state: dict) -> dict:
         """Validate and fix SQL"""
+        print(f"traffic_agent :: repair_sql :: state :: {state}")
         retries = state["repairs_left"]
         ### If retries are left or issues raised in prior run, rerun loop at generate sql func
         has_sql_faults = state["sql_issues"] or state["error"]
@@ -79,7 +80,7 @@ class TrafficAgent:
         query = f"SELECT column_name, data_type FROM information_schema.columns \
         WHERE table_name = '{TRAFFIC_TABLE_NAME}' ORDER BY ordinal_position"
         result = self.db_manager.execute_query(uuid=self.request_id, query=query)
-        return ", ".join(f'"{c}" {t}' for c, t in json.loads(result[0]['text'])["rows"])
+        return ", ".join(f'"{c}" {t}' for c, t in result["rows"])
     
 
     def _get_link_types(self) -> list:
@@ -102,11 +103,13 @@ class TrafficAgent:
 
     def generate_sql(self, state: dict) -> dict:
         """Create/Corrects SQL query for provided user question"""
+        print(f"traffic_agent :: generate_sql :: state :: {state}")
+        self.request_id = state["request_id"]
         question = state["question"]
         schema = self._get_schema()
         do_repair = False   #Manages SQL correction
 
-        if state["sql_query"] and (state["error"] or state["sql_issues"]):
+        if "sql_query" in state and state["sql_query"] and (state["error"] or state["sql_issues"]):
             sql_faults = f'{state["error"]}\nIssues:{state["sql_issues"]}\n'
             do_repair = True
 
@@ -139,6 +142,7 @@ class TrafficAgent:
 
     def summarize(self, state: dict) -> dict:
         """Provide summary for user question"""
+        print(f"traffic_agent :: summarize :: state :: {state}")
         if state["sql_query"] == "NOT_RELEVANT":
             return {"summary": f'Sorry, Please provide additional information. Original question : {state["question"]}'}
 
@@ -154,6 +158,7 @@ class TrafficAgent:
 
 
     def warmup(self, state: dict) -> dict:
+        print(f"traffic_agent :: warmup :: state :: {state}")
         intent = intent_tag(state["question"])
 
         self.llm_manager_rest.call(warmup=True)
@@ -167,6 +172,7 @@ class TrafficAgent:
 
     def run_sql(self, state: dict, query: str) -> dict:
         """Execute query"""
+        print(f"traffic_agent :: run_sql :: state :: {state}")
         query = state["sql_query"]
         _lquery = query.lower().lstrip()
         if query == "NOT_RELEVANT":
