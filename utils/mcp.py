@@ -31,7 +31,7 @@ def parse_mcp_query_response(mcp_result: Union[list, dict, str, None]) -> dict:
                 \n  "rowCount": 5\n}',
             'id': 'lc_42c9b207-fc49-4e31-a50a-c0fa18ecf9ad'}
             ]
-    Output:
+    Intermediate response:
         {
             "success": true,
             "columns": ["NodeNumber", "NodeID", ...],
@@ -42,6 +42,9 @@ def parse_mcp_query_response(mcp_result: Union[list, dict, str, None]) -> dict:
     """
 
     try:
-        return json.loads(mcp_result[0]['text'])
+        result = json.loads(mcp_result[0]['text'])
+        data = [{c: (str(v) if hasattr(v, "isoformat") else v) for c, v in zip(result["columns"], r)} for r in result["rows"]]
+        result["rows"] = data
+        return result
     except Exception as e:
         raise e
