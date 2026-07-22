@@ -44,7 +44,7 @@ def parse_mcp_query_response(mcp_result: Union[list, dict, str, None]) -> dict:
     try:
         result = json.loads(mcp_result[0]['text'])
         data = [{c: (str(v) if hasattr(v, "isoformat") else v) for c, v in zip(result["columns"], r)} for r in result["rows"]]
-        result["rows"] = data
+        result["data"] = data
         return result
     except Exception as e:
         raise e

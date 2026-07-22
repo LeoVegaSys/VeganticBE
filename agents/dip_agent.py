@@ -173,6 +173,6 @@ class DipAgent:
         return {
             "summary" : summary,
             "row_count": result["rowCount"],
-            "results": result["rows"],
+            "results": result["data"],
             "columns": result["columns"],
             }

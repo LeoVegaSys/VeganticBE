@@ -145,6 +145,7 @@ class TrafficAgent:
     def summarize(self, state: dict) -> dict:
         """Provide summary for user question"""
         print(f"\ntraffic_agent :: summarize :: state :: {state}")
+        _error = ""
         if not state["summarize"]:
             return 
         if state["sql_query"] == "NOT_RELEVANT":
@@ -157,8 +158,9 @@ class TrafficAgent:
                 temperature=0.2
             )
         except Exception as e:
-            summary = fallback_summarize(state["results"]) + f"\nLLM summary unavailable. Issue encountered : {e}"
-        return {"summary": summary}
+            summary = fallback_summarize(state["results"])
+            _error = f"LLM summary unavailable. Issue encountered : {e}"
+        return {"summary": summary, "error": _error} if _error else {"summary": summary}
 
 
     def warmup(self, state: dict) -> dict:
@@ -193,7 +195,7 @@ class TrafficAgent:
                                                    query=query)
             return {
                 "sql_valid": True, 
-                "results": result["rows"],
+                "results": result["data"],
                 "row_count": result["rowCount"],
                 "columns": result["columns"]
                 }
