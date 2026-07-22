@@ -36,7 +36,8 @@ def parse_mcp_query_response(mcp_result: Union[list, dict, str, None]) -> dict:
             "success": true,
             "columns": ["NodeNumber", "NodeID", ...],
             "columnTypes": ["SHORT", "VAR_STRING", ...],
-            "rows": [{"NodeNumber": 117, "NodeID": "202.123.37.241", ...}],
+            "rows": [["Core", "HYD_OHR_901_...]],
+            "data": [{"NodeNumber": 117, "NodeID": "202.123.37.241", ...}],
             "rowCount": 5
         }
     """

@@ -14,6 +14,9 @@ class InputState(TypedDict):
     summarize: bool
     row_count: int
     columns: List[str]
+    sql_valid: bool
+    sql_issues: str
+    error: str
 
 class OutputState(TypedDict):
     uuid: str

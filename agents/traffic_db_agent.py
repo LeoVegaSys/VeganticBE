@@ -200,5 +200,5 @@ class TrafficAgent:
                 "columns": result["columns"]
                 }
         except Exception as e:
-            return {"error": str(e)}
+            return {"error": str(e), "sql_issues": str(e)}
     

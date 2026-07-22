@@ -161,7 +161,10 @@ class DipAgent:
         # Window is measured from the DATASET's own latest sample, not wall-clock
         # now() -- this dataset is historical/fixed, not a live stream.
         sql = self._get_dip_sql_query(window_hours, linktype_filter, util_filter, min_drop, limit)
-        result = self.dbm.execute_query(uuid=self.request_id, query=sql)
+        try:
+            result = self.dbm.execute_query(uuid=self.request_id, query=sql)
+        except Exception as e:
+            return {"sql_query": sql, "sql_valid": False, "sql_issues": str(e), "error": str(e)}
 
         summary = ""
         if not result["rows"]:
@@ -171,6 +174,8 @@ class DipAgent:
                 last {window_hours}h, linktype={linktype or 'ALL'}{extra}.")
             
         return {
+            "sql_query": sql, 
+            "sql_valid": True, 
             "summary" : summary,
             "row_count": result["rowCount"],
             "results": result["data"],
