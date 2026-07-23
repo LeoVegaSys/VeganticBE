@@ -1,12 +1,15 @@
 from uuid import uuid4
+
+from langgraph.graph import END, START
 from langgraph.graph import StateGraph
+from langchain_core.runnables import RunnableConfig
+
 from state.state import InputState, OutputState
 from agents.sql_agent import SQLAgent
 from agents.dip_agent import DipAgent
 from graph.traffic_graph_manager import TrafficWorkflowManager
-# from utils.category_router import get_query_type
 from data_formatter import DataFormatter
-from langgraph.graph import END, START
+from utils.context import Context
 
 
 ## Sub-graph routing paramters
@@ -84,12 +87,32 @@ class WorkflowManager:
     def returnGraph(self):
         return self.create_workflow().compile()
 
-    def run_sql_agent(self, question: str, db_type:str, summarize: bool = False, uuid: str = "") -> dict:
-        """Run the SQL agent workflow and return the formatted answer and visualization recommendation."""
-        print(f"\nGraph :: run_sql_agent :: Q {question} :: DT {db_type} :: SMR {summarize} :: ID {uuid}")
+    def run_sql_agent(
+            self, 
+            question: str, 
+            db_type:str, 
+            summarize: bool = False, 
+            uuid: str = "",
+            session_id: str = "",
+            user_id: str = ""
+        ) -> dict:
+        """
+        Run the SQL agent workflow and return the formatted answer and visualization recommendation.
+        """
+        print(f"\nGraph :: run_sql_agent :: Q {question} :: DT {db_type} :: SMR {summarize} \
+              :: ID {uuid} :: SID :: {session_id} :: UID :: {user_id}")
         app = self.create_workflow().compile()
+        
         _uuid = uuid or uuid4().hex[:12]
-        result =  app.invoke({"question": question, "uuid": _uuid, "summarize": summarize, "mcp_server": db_type})
+        config: RunnableConfig = {"configurable": {"thread_id": session_id}} if session_id else None
+        context = Context(user_id=user_id) if user_id else None
+
+        result =  app.invoke(
+            input={"question": question, "uuid": _uuid, "summarize": summarize, "mcp_server": db_type},
+            config=config,
+            context=context,
+        )
+        
         print(f"\ngraph :: run_sql_agent :: result :: {result}")
         return result
         # return {

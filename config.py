@@ -27,6 +27,7 @@ SERVER_HOST=os.getenv("SERVER_HOST", "0.0.0.0")
 SERVER_PORT=int(os.getenv("SERVER_PORT", 8000))
 
 MCP_DB_PATH=os.getenv("DB_PATH")
+MCP_DB_NAME=os.getenv("DB_NAME")
 MCP_DB_TYPE=os.getenv("MCP_DB_TYPE", "mysql")
 TRAFFIC_TABLE_NAME=os.getenv("TRAFFIC_TABLE_NAME", "traffic")
 DB_ENDPOINT_URL = os.getenv("DB_ENDPOINT_URL")

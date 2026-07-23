@@ -29,6 +29,8 @@ def main():
     ap.add_argument("--no-summary", action="store_true")
     ap.add_argument("--serve", action="store_true")
     ap.add_argument("--port", type=int, default=SERVER_PORT)
+    ap.add_argument("--session-id", type=str)
+    ap.add_argument("--user-id", type=str)
     args = ap.parse_args()
     print(f"args :: {args}")
     DB_PATH = args.db

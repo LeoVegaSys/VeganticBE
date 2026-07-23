@@ -20,9 +20,13 @@ class ApiServer(BaseHTTPRequestHandler):
                 body = json.loads(self.rfile.read(n) or "{}")
             except Exception:
                 body = {}
+
             q = (body.get("question") or "").strip()
             summ = body.get("no_summary", True)
             db_type = body.get("db_type", MCP_DB_TYPE)
+            session_id = body.get("session_id", "")
+            user_id = body.get("user_id", "")
+
             # res = WorkflowManager().run_sql_agent(q, summarize_result=summ) if q else {"error": "no question"}
             res = WorkflowManager().run_sql_agent(question=q, db_type=db_type, summarize=not summ) if q else {"error": "no question"}
             payload = json.dumps(res, default=str).encode()
