@@ -24,7 +24,7 @@ class InputState(TypedDict):
 
 class OutputState(TypedDict):
     uuid: str
-    messages : Annotated[list[AnyMessage], add_messages]
+    # messages : Annotated[list[AnyMessage], add_messages]
     parsed_question: Dict[str, Any]
     unique_nouns: List[str]
     sql_query: str

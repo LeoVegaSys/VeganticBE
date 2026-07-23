@@ -1,6 +1,6 @@
 from langgraph.graph import StateGraph, START, END
 
-from state.traffic_state import TrafficState
+from state.traffic_state import TrafficState, TrafficOutputState
 from agents.traffic_db_agent import TrafficAgent
 
 class TrafficWorkflowManager:
@@ -9,7 +9,9 @@ class TrafficWorkflowManager:
 
     def create_workflow(self) -> StateGraph:
         """Create and configure the workflow graph."""
-        workflow = StateGraph(state_schema=TrafficState)
+        workflow = StateGraph(state_schema=TrafficState,
+                              input_schema=TrafficState,
+                              output_schema=TrafficOutputState)
 
         workflow.add_node("warmup", self.sql_agent.warmup)
         workflow.add_node("generate_sql", self.sql_agent.generate_sql)

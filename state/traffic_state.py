@@ -25,4 +25,25 @@ class TrafficState(TypedDict):
     chart_intent: str
     repairs_left: int
     summarize: bool
+
+class TrafficOutputState(TypedDict):
+    request_id: str
+    # messages : Annotated[list[AnyMessage], add_messages]
+    question: str
+    mcp_server: str
+    sql_query: str
+    sql_valid: bool
+    sql_issues: str
+    error: str
+    row_count: int
+    columns: List[str]
+    results: List[Any]
+    summary: Annotated[str, operator.add]
+    visualization: Annotated[str, operator.add]
+    visualization_reason: Annotated[str, operator.add]
+    formatted_data_for_visualization: Dict[str, Any]
+    intent: str
+    chart_intent: str
+    # repairs_left: int
+    summarize: bool
     
