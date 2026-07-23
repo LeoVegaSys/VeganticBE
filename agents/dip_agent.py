@@ -1,4 +1,6 @@
 import re
+import json
+from langchain.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage
 
 from database.db_manager import DatabaseManager
 from models.llm_manager import LLMManager_REST
@@ -111,15 +113,27 @@ class DipAgent:
         print(f"\ndip_agent :: summarize :: state :: {state}")
         if state["summarize"]:
             try:
+                summary_prompt = get_summarize_prompt(state)
                 summary = self.llm_manager_rest.call(
-                    prompt=get_summarize_prompt(state),
+                    prompt=summary_prompt,
                     model=SUMMARY_MODEL,
                     temperature=0.2
                 )
+                return {
+                    "messages": [
+                        SystemMessage(content=summary_prompt),
+                        AIMessage(content=summary)
+                    ],
+                    "summary": summary
+                    }
             except Exception as e:
                 summary = fallback_summarize(state["results"])
-                summary += f"\nLLM summary unavailable. Issue encountered : {e}"
-            return {"summary": summary}
+                _error = f"LLM summary unavailable. Issue encountered : {e}"
+            return {
+                "messages": AIMessage(content=summary),
+                "summary": summary,
+                "error": _error
+                }
         return {}
 
 
@@ -174,6 +188,15 @@ class DipAgent:
                 last {window_hours}h, linktype={linktype or 'ALL'}{extra}.")
             
         return {
+            "messages": [
+                HumanMessage(content=state["question"]),
+                ToolMessage(
+                    content=json.dumps(result["data"]),
+                    tool_call_id=result["tool_id"],
+                    name=result["tool_name"],
+                ),
+                AIMessage(content=summary)
+            ],
             "sql_query": sql, 
             "sql_valid": True, 
             "summary" : summary,

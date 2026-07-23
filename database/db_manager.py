@@ -40,11 +40,11 @@ async def _execute_query(uuid: str, query: str, mcp_server_name: str = ""):
             # tools = await mcp_client.get_tools(server_name=mcp_server)
             tools = await load_mcp_tools(session)
             run_tool = next(t for t in tools if t.name==mcp_func[mcp_server])
-            print(f"DBM :: tool called :: {run_tool}")
+            print(f"DBM :: tool called :: {run_tool.name}")
             # result = await mcp_client.call_tool("run_query", query)
             result=await run_tool.ainvoke({ mcp_key[mcp_server]: query })
             print(f"\nDBM :: _execute_query :: Result: {result}")
-            return parse_mcp_query_response(result)
+            return parse_mcp_query_response(result, run_tool.name)
 
     except Exception as e :
         err_msg = f"MCP :: Error encountered while executing {mcp_server} :: query {query} : {str(e)}"

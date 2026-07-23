@@ -16,7 +16,7 @@ def get_mcp_details():
         mcp_key[key] = val["query_key"]
     return (mcp_server_config, mcp_func, mcp_key)
 
-def parse_mcp_query_response(mcp_result: Union[list, dict, str, None]) -> dict:
+def parse_mcp_query_response(mcp_result: Union[list, dict, str, None], tool_name: str = "") -> dict:
     """
     Parse MCP Tool Query Execution response
     Input args:
@@ -48,6 +48,7 @@ def parse_mcp_query_response(mcp_result: Union[list, dict, str, None]) -> dict:
         data = [{c: (str(v) if hasattr(v, "isoformat") else v) for c, v in zip(result["columns"], r)} for r in result["rows"]]
         result["data"] = data
         result['tool_id'] = tool_id
+        result['tool_name'] = tool_name
         return result
     except Exception as e:
         raise e

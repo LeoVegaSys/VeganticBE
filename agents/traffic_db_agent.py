@@ -1,7 +1,7 @@
 import json
 
 from langgraph.types import Command
-from langchain.messages import HumanMessage, SystemMessage, AIMessage
+from langchain.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage
 
 from database.db_manager import DatabaseManager
 from models.llm_manager import LLMManager_REST
@@ -136,11 +136,13 @@ class TrafficAgent:
             self.llm_manager_rest.call(
                 prompt=prompt, model=SQL_MODEL, temperature=0.0
             ))
+
+        msgs = [SystemMessage(content=prompt), AIMessage(sql_response)]
     
         if sql_response.strip() == "NOT_ENOUGH_INFO":
-            return {"sql_query": "NOT_RELEVANT"}
+            return {"messages": msgs, "sql_query": "NOT_RELEVANT"}
         else:
-            return {"sql_query": sql_response, "sql_valid": True, "sql_issues": "", "error": ""}
+            return {"messages": msgs, "sql_query": sql_response, "sql_valid": True, "sql_issues": "", "error": ""}
 
 
     def summarize(self, state: dict) -> dict:
@@ -153,15 +155,27 @@ class TrafficAgent:
             return {"summary": f'Sorry, Please provide additional information. Original question : {state["question"]}'}
 
         try:
+            summary_prompt = get_summarize_prompt(state)
             summary = self.llm_manager_rest.call(
-                prompt=get_summarize_prompt(state),
+                prompt=summary_prompt,
                 model=SUMMARY_MODEL,
                 temperature=0.2
             )
+            return {
+                "messages": [
+                    SystemMessage(content=summary_prompt),
+                    AIMessage(content=summary)
+                    ],
+                "summary": summary
+                }
         except Exception as e:
             summary = fallback_summarize(state["results"])
             _error = f"LLM summary unavailable. Issue encountered : {e}"
-        return {"summary": summary, "error": _error} if _error else {"summary": summary}
+            return {
+                "messages": AIMessage(content=summary),
+                "summary": summary, 
+                "error": _error
+            }
 
 
     def warmup(self, state: dict) -> dict:
@@ -171,7 +185,7 @@ class TrafficAgent:
         self.llm_manager_rest.call(warmup=True)
         
         return {
-            "messages" : HumanMessage(state["question"]),
+            "messages" : HumanMessage(content=state["question"]),
             "repairs_left": QA_MAX_REPAIRS, 
             "intent": intent,
             "chart_intent" : CHART_INTENT_ALIASES.get(intent, intent)
@@ -193,9 +207,14 @@ class TrafficAgent:
             }
         
         try:
-            result = self.db_manager.execute_query(uuid=state['request_id'], 
-                                                   query=query)
+            result = self.db_manager.execute_query(
+                uuid=state['request_id'], query=query)
             return {
+                "messages": ToolMessage(
+                    content=json.dumps(result["data"]),
+                    tool_call_id=result["tool_id"],
+                    name=result["tool_name"],
+                ),
                 "sql_valid": True, 
                 "results": result["data"],
                 "row_count": result["rowCount"],
