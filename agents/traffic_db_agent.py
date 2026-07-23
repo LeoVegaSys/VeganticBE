@@ -1,6 +1,7 @@
 import json
 
 from langgraph.types import Command
+from langchain.messages import HumanMessage, SystemMessage, AIMessage
 
 from database.db_manager import DatabaseManager
 from models.llm_manager import LLMManager_REST
@@ -170,6 +171,7 @@ class TrafficAgent:
         self.llm_manager_rest.call(warmup=True)
         
         return {
+            "messages" : HumanMessage(state["question"]),
             "repairs_left": QA_MAX_REPAIRS, 
             "intent": intent,
             "chart_intent" : CHART_INTENT_ALIASES.get(intent, intent)

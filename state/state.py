@@ -2,8 +2,12 @@ from typing import List, Any, Annotated, Dict, Optional
 from typing_extensions import TypedDict
 import operator
 
+from langchain_core.messages import AnyMessage
+from langgraph.graph import add_messages
+
 class InputState(TypedDict):
     uuid: str
+    messages : Annotated[list[AnyMessage], add_messages]
     question: str
     mcp_server: str
     parsed_question: Dict[str, Any]
@@ -20,6 +24,7 @@ class InputState(TypedDict):
 
 class OutputState(TypedDict):
     uuid: str
+    messages : Annotated[list[AnyMessage], add_messages]
     parsed_question: Dict[str, Any]
     unique_nouns: List[str]
     sql_query: str

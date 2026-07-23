@@ -2,8 +2,12 @@ from typing import List, Any, Annotated, Dict, Optional
 from typing_extensions import TypedDict
 import operator
 
+from langchain_core.messages import AnyMessage
+from langgraph.graph import add_messages
+
 class TrafficState(TypedDict):
     request_id: str
+    messages : Annotated[list[AnyMessage], add_messages]
     question: str
     mcp_server: str
     sql_query: str
