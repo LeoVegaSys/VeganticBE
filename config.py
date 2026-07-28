@@ -32,5 +32,10 @@ MCP_DB_TYPE=os.getenv("MCP_DB_TYPE", "mysql")
 TRAFFIC_TABLE_NAME=os.getenv("TRAFFIC_TABLE_NAME", "traffic")
 DB_ENDPOINT_URL = os.getenv("DB_ENDPOINT_URL")
 
-
 CHART_INTENT_ALIASES = {"timeseries": "trend", "dip": "ranking"}
+
+EMBED_MODEL=os.getenv("EMBED_MODEL")
+QDRANT_URL=os.getenv("QDRANT_URL")
+TOP_K_PER_COLLECTION=os.getenv("TOP_K_PER_COLLECTION")
+TOP_K_FEEDBACK=os.getenv("TOP_K_FEEDBACK")
+COLLECTIONS=os.getenv("COLLECTIONS")
