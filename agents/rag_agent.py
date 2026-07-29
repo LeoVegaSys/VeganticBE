@@ -34,6 +34,9 @@ class RAGAgent:
             print(f"[rag_agent] Warning: could not query {col_name}: {e}")
             return []
 
+    def process_points(self):
+        pass
+
     def _process_point_to_chunks(self, point):
 
         feedback_chunks = []
