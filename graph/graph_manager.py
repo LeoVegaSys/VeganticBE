@@ -3,6 +3,8 @@ from uuid import uuid4
 from langgraph.graph import END, START
 from langgraph.graph import StateGraph
 from langchain_core.runnables import RunnableConfig
+from langgraph.checkpoint.redis import RedisSaver
+from langgraph.store.redis import RedisStore
 
 from state.state import InputState, OutputState
 from agents.sql_agent import SQLAgent
@@ -101,6 +103,11 @@ class WorkflowManager:
         """
         print(f"\nGraph :: run_sql_agent :: Q {question} :: DT {db_type} :: SMR {summarize} \
               :: ID {uuid} :: SID :: {session_id} :: UID :: {user_id}")
+
+        # store = RedisStore.from_conn_string(STORE_DB_URI)
+        # checkpointer = RedisSaver.from_conn_string(MEM_DB_URI)
+
+        # app = self.create_workflow().compile(store=store, checkpointer=checkpointer)
         app = self.create_workflow().compile()
         
         _uuid = uuid or uuid4().hex[:12]

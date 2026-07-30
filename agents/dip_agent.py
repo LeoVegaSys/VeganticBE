@@ -15,11 +15,11 @@ class DipAgent:
 
 
     def _get_dip_sql_query(self, window_hours, linktype_filter, util_filter, min_drop, limit):
-        return f'''WITH data_end AS (SELECT MAX("Time") AS t FROM traffic),
+        return f'''WITH data_end AS (SELECT MAX("Time") AS t FROM {TRAFFIC_TABLE_NAME}),
     windowed AS (
         SELECT "Node Name", "Interface Name", "LinkType", "BW(Kb)", "Time",
             "In Traffic (Kbps)", "Out Traffic (Kbps)"
-        FROM traffic, data_end
+        FROM {TRAFFIC_TABLE_NAME}, data_end
         WHERE "Time" >= data_end.t - INTERVAL '{window_hours} hours'
         {linktype_filter}
     ),
