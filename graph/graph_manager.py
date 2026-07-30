@@ -129,26 +129,25 @@ class WorkflowManager:
               :: ID {uuid} :: SID :: {session_id} :: UID :: {user_id}")
 
         store_uri = f"redis://{REDIS_HOST}:{REDIS_PORT}"
-        store = RedisStore.from_conn_string(store_uri)
-        checkpointer = RedisSaver.from_conn_string(store_uri)
+        with RedisStore.from_conn_string(store_uri) as store:
+        # checkpointer = RedisSaver.from_conn_string(store_uri)
 
-        app = self.create_workflow().compile(store=store, checkpointer=checkpointer)
-        # app = self.create_workflow().compile()
-        
-        _uuid = uuid or uuid4().hex[:12]
-        config: RunnableConfig = {"configurable": {"thread_id": session_id}} if session_id else None
-        context = Context(user_id=user_id) if user_id else None
+            app = self.create_workflow().compile(store=store)
+            # app = self.create_workflow().compile(store=store, checkpointer=checkpointer)
+            # app = self.create_workflow().compile()
 
-        result =  app.invoke(
-            input={"question": question, "uuid": _uuid, "summarize": summarize, "mcp_server": db_type},
-            config=config,
-            context=context,
-        )
+            _uuid = uuid or uuid4().hex[:12]
+            config: RunnableConfig = {"configurable": {"thread_id": session_id}} if session_id else None
+            context = Context(user_id=user_id) if user_id else None
 
+            result =  app.invoke(
+                input={"question": question, "uuid": _uuid, "summarize": summarize, "mcp_server": db_type},
+                config=config,
+                context=context,
+            )
 
-        
-        print(f"\ngraph :: run_sql_agent :: result :: {result}")
-        return result
+            print(f"\ngraph :: run_sql_agent :: result :: {result}")
+            return result
         # return {
         #     "summary": result['summary'],
         #     "visualization": result['visualization'],
