@@ -61,7 +61,10 @@ class TrafficAgent:
         print(f"\ntraffic_agent :: repair_sql :: state :: {state}")
         retries = state["repairs_left"]
         ### If retries are left or issues raised in prior run, rerun loop at generate sql func
-        has_sql_faults = state["sql_issues"] or state["error"]
+        try:
+            has_sql_faults = state["sql_issues"] if "sql_issues" in state else state["error"]
+        except Exception as e:
+            has_sql_faults = ""
         if retries and not state["sql_valid"] and has_sql_faults:
             return Command(
                 goto="generate_sql",
