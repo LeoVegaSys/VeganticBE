@@ -1,10 +1,13 @@
+import json
 from uuid import uuid4
+
 
 from langgraph.graph import END, START
 from langgraph.graph import StateGraph
 from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.redis import RedisSaver
 from langgraph.store.redis import RedisStore
+from langgraph.runtime import Runtime
 
 from state.state import InputState, OutputState
 from agents.sql_agent import SQLAgent
@@ -13,6 +16,8 @@ from graph.traffic_graph_manager import TrafficWorkflowManager
 from data_formatter import DataFormatter
 from utils.context import Context
 
+from config import REDIS_HOST, REDIS_PORT
+
 
 ## Sub-graph routing paramters
 DIP_KEYWORDS = ("dip", "dips", "dipped", "drop", "dropped", "surge", "spike",
@@ -20,8 +25,22 @@ DIP_KEYWORDS = ("dip", "dips", "dipped", "drop", "dropped", "surge", "spike",
 ##
 
 # Sub-graph router
-def get_query_type(state: dict) -> str:
+def get_query_type(state: dict, runtime: Runtime[Context]) -> str:
     print(f"\nget_query_type :: state :: {state}")
+
+    try:
+        user_id = runtime.context.user_id
+        namespace = ("memories", user_id)
+
+        memories = runtime.store.search(namespace)
+        if memories:
+            memory = "\n".join([d.value[k] for d in memories for k in ["question", "answer"]])
+            print(f"NS :: {namespace} :: MemLen :: {len(memories)} :: Memory : {memory}")
+
+        runtime.store.put(namespace, str(uuid4()), {"question": json.dumps(state["question"])})
+    except Exception as e:
+        print(f"Error occurred during store read/write : {str(e)}")
+
     query = state['question'].lower()
     if any(w in query for w in DIP_KEYWORDS):
         return "calculate_dip"
@@ -30,11 +49,16 @@ def get_query_type(state: dict) -> str:
     return "parse_question"
 
 
-def call_traffic_graph(state: InputState):
+def call_traffic_graph(state: InputState, runtime: Runtime[Context]):
     print(f"\ncall_traffic_graph :: state :: {state}")
     result = TrafficWorkflowManager().run_traffic_agent(
         question=state["question"], summarize=state["summarize"], 
         request_id=state["uuid"], mcp_server=state["mcp_server"])
+
+    user_id = runtime.context.user_id
+    namespace = ("memories", user_id)
+    runtime.store.put(namespace, str(uuid4()), {"answer": json.dumps(state)})
+
     print(f"\ntrafficGraph :: call_traffic_graph :: result :: {result}")
     return result
 
@@ -104,11 +128,12 @@ class WorkflowManager:
         print(f"\nGraph :: run_sql_agent :: Q {question} :: DT {db_type} :: SMR {summarize} \
               :: ID {uuid} :: SID :: {session_id} :: UID :: {user_id}")
 
-        # store = RedisStore.from_conn_string(STORE_DB_URI)
-        # checkpointer = RedisSaver.from_conn_string(MEM_DB_URI)
+        store_uri = f"redis://{REDIS_HOST}:{REDIS_PORT}"
+        store = RedisStore.from_conn_string(store_uri)
+        checkpointer = RedisSaver.from_conn_string(store_uri)
 
-        # app = self.create_workflow().compile(store=store, checkpointer=checkpointer)
-        app = self.create_workflow().compile()
+        app = self.create_workflow().compile(store=store, checkpointer=checkpointer)
+        # app = self.create_workflow().compile()
         
         _uuid = uuid or uuid4().hex[:12]
         config: RunnableConfig = {"configurable": {"thread_id": session_id}} if session_id else None
@@ -119,6 +144,8 @@ class WorkflowManager:
             config=config,
             context=context,
         )
+
+
         
         print(f"\ngraph :: run_sql_agent :: result :: {result}")
         return result
