@@ -34,7 +34,8 @@ def get_query_type(state: dict, runtime: Runtime[Context]) -> str:
 
         memories = runtime.store.search(namespace)
         if memories:
-            memory = "\n".join([d.value[k] for d in memories for k in ["question", "answer"]])
+            memory_set = [d.value for d in memories for k in ["question", "answer"] if k in d.value]
+            memory = "\n".join([f"{k}:{v}" for m in memory_set for k,v in m.items()])
             print(f"NS :: {namespace} :: MemLen :: {len(memories)} :: Memory : {memory}")
 
         runtime.store.put(namespace, str(uuid4()), {"question": json.dumps(state["question"])})
@@ -119,8 +120,8 @@ class WorkflowManager:
             db_type:str, 
             summarize: bool = False, 
             uuid: str = "",
-            session_id: str = "",
-            user_id: str = ""
+            session_id: str = "SESS1",
+            user_id: str = "USER1"
         ) -> dict:
         """
         Run the SQL agent workflow and return the formatted answer and visualization recommendation.
