@@ -8,6 +8,8 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.redis import RedisSaver
 from langgraph.store.redis import RedisStore
 from langgraph.runtime import Runtime
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.types import interrupt
 
 from state.state import InputState, OutputState
 from agents.sql_agent import SQLAgent
@@ -28,6 +30,11 @@ DIP_KEYWORDS = ("dip", "dips", "dipped", "drop", "dropped", "surge", "spike",
 # Sub-graph router
 def get_query_type(state: dict, runtime: Runtime[Context]) -> str:
     print(f"\nget_query_type :: state :: {state}")
+
+    is_approved = interrupt({
+        "question": "Do you want to proceed with this action?",
+        # "details": state["action_details"]
+    })
 
     try:
         memories = read_from_store(
@@ -133,11 +140,12 @@ class WorkflowManager:
               :: ID {uuid} :: SID :: {session_id} :: UID :: {user_id}")
 
         store_uri = f"redis://{REDIS_HOST}:{REDIS_PORT}"
+        checkpointer = InMemorySaver()
         with RedisStore.from_conn_string(store_uri, ttl=get_store_config()) as store:
         # checkpointer = RedisSaver.from_conn_string(store_uri)
 
-            app = self.create_workflow().compile(store=store)
-            # app = self.create_workflow().compile(store=store, checkpointer=checkpointer)
+            # app = self.create_workflow().compile(store=store)
+            app = self.create_workflow().compile(store=store, checkpointer=checkpointer)
             # app = self.create_workflow().compile()
 
             _uuid = uuid or uuid4().hex[:12]

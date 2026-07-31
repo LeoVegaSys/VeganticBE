@@ -13,6 +13,14 @@ def get_store_config():
     "refresh_on_read": True             #TRUE to Reset expiration timer on each read
 }
 
+
+def keep_last_n(store: RedisStore, n: int):
+    ### Clear older records. Store size max N
+    # Check counts of each namespace
+    # Sort by created_at desc, keep first N
+    pass
+
+
 def write_entry_to_store(store:RedisStore, user_id:str, category: str, param:str, data: str):
     try:
         with RedisStore.from_conn_string(REDIS_STORE_URI) as store:
@@ -35,7 +43,7 @@ def read_from_store(store: RedisStore, user_id: str, category: str, params: list
     try:
         with RedisStore.from_conn_string(REDIS_STORE_URI) as store:
             namespace = (category, user_id)
-            results = store.search(namespace)
+            results = store.search(namespace, limit=50)
             if results:
                 result_set = [r.value for r in results for p in params if p in r.value]
             return result_set
