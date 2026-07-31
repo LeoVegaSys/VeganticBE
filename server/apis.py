@@ -22,7 +22,7 @@ class ApiServer(BaseHTTPRequestHandler):
                 body = {}
 
             q = (body.get("question") or "").strip()
-            summ = body.get("no_summary", True)
+            summ = body.get("no_summary", False)
             db_type = body.get("db_type", MCP_DB_TYPE)
             session_id = body.get("session_id", "")
             user_id = body.get("user_id", "")

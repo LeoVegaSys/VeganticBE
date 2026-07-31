@@ -15,6 +15,7 @@ from agents.dip_agent import DipAgent
 from graph.traffic_graph_manager import TrafficWorkflowManager
 from data_formatter import DataFormatter
 from utils.context import Context
+from utils.store import write_entry_to_store, read_from_store
 
 from config import REDIS_HOST, REDIS_PORT
 
@@ -29,16 +30,18 @@ def get_query_type(state: dict, runtime: Runtime[Context]) -> str:
     print(f"\nget_query_type :: state :: {state}")
 
     try:
-        user_id = runtime.context.user_id
-        namespace = ("memories", user_id)
-
-        memories = runtime.store.search(namespace)
+        memories = read_from_store(
+            store=runtime.store, user_id=runtime.context.user_id, category="memories", 
+            params=["question", "answer"]
+        )
         if memories:
-            memory_set = [d.value for d in memories for k in ["question", "answer"] if k in d.value]
-            memory = "\n".join([f"{k}:{v}" for m in memory_set for k,v in m.items()])
-            print(f"NS :: {namespace} :: MemLen :: {len(memories)} :: Memory : {memory}")
+            memory = "\n".join([f"\n{k.upper()}:{v}" for m in memories for k,v in m.items()])
+            print(f"NS :: {'memories', runtime.context.user_id} :: MemLen :: {len(memories)} :: Memory : {memory}")
 
-        runtime.store.put(namespace, str(uuid4()), {"question": json.dumps(state["question"])})
+        write_entry_to_store(
+            store=runtime.store, user_id=runtime.context.user_id, category="memories",
+            param="question", data=json.dumps(state["question"])
+        )
     except Exception as e:
         print(f"Error occurred during store read/write : {str(e)}")
 
@@ -55,11 +58,11 @@ def call_traffic_graph(state: InputState, runtime: Runtime[Context]):
     result = TrafficWorkflowManager().run_traffic_agent(
         question=state["question"], summarize=state["summarize"], 
         request_id=state["uuid"], mcp_server=state["mcp_server"])
-
-    user_id = runtime.context.user_id
-    namespace = ("memories", user_id)
-    runtime.store.put(namespace, str(uuid4()), {"answer": json.dumps(state)})
-
+    
+    write_entry_to_store(
+        store=runtime.store, user_id=runtime.context.user_id, category="memories",
+        param="answer", data=json.dumps(result)
+    )
     print(f"\ntrafficGraph :: call_traffic_graph :: result :: {result}")
     return result
 

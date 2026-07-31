@@ -13,3 +13,5 @@ wheels/
 *.jsonl
 
 dv_hanoff/
+session_memory/
+user_store/
