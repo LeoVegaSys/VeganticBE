@@ -44,3 +44,4 @@ CHUNK_OVERLAP=os.getenv("CHUNK_OVERLAP")
 
 REDIS_HOST=os.getenv("REDIS_HOST")
 REDIS_PORT=os.getenv("REDIS_PORT")
+REDIS_TTL=os.getenv("REDIS_TTL")

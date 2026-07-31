@@ -15,7 +15,7 @@ from agents.dip_agent import DipAgent
 from graph.traffic_graph_manager import TrafficWorkflowManager
 from data_formatter import DataFormatter
 from utils.context import Context
-from utils.store import write_entry_to_store, read_from_store
+from utils.store import write_entry_to_store, read_from_store, get_store_config
 
 from config import REDIS_HOST, REDIS_PORT
 
@@ -133,7 +133,7 @@ class WorkflowManager:
               :: ID {uuid} :: SID :: {session_id} :: UID :: {user_id}")
 
         store_uri = f"redis://{REDIS_HOST}:{REDIS_PORT}"
-        with RedisStore.from_conn_string(store_uri) as store:
+        with RedisStore.from_conn_string(store_uri, ttl=get_store_config()) as store:
         # checkpointer = RedisSaver.from_conn_string(store_uri)
 
             app = self.create_workflow().compile(store=store)

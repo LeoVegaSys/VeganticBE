@@ -2,9 +2,16 @@ from uuid import uuid4
 
 from langgraph.store.redis import RedisStore
 
-from config import REDIS_HOST, REDIS_PORT
+from config import REDIS_HOST, REDIS_PORT, REDIS_TTL
 
 REDIS_STORE_URI = f"redis://{REDIS_HOST}:{REDIS_PORT}"
+
+
+def get_store_config():
+    return {
+    "default_ttl": int(REDIS_TTL),      # Expire data after 60 minutes
+    "refresh_on_read": False            #TRUE to Reset expiration timer on each read
+}
 
 def write_entry_to_store(store:RedisStore, user_id:str, category: str, param:str, data: str):
     try:
@@ -19,6 +26,7 @@ def write_entry_to_store(store:RedisStore, user_id:str, category: str, param:str
 
 def clear_store(user_id: str):
     with RedisStore.from_conn_string(REDIS_STORE_URI) as store:
+
         # CLEAR ALL NAMESPACES RELATED TO USER
         pass
 
