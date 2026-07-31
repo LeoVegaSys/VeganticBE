@@ -1,7 +1,7 @@
 """
-rag_service_v3.py
+rag_service.py
 
-Retrieval service for V3.
+Retrieval service.
 
 Strategy:
     - Query BOTH collections (noc_v3_ietf + noc_v3_rfc) in parallel

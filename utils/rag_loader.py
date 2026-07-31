@@ -10,6 +10,11 @@ from qdrant_client.models import Distance, VectorParams, PointStruct
 
 import config as c
 
+
+def load_docs(file_path: str, allowed_extensions: list[str], collection: str):
+    RagLoader(path=file_path, extensions=allowed_extensions).load(to_collection_name=collection)
+
+
 class RagLoader:
     def __init__(self, path: str = "", extensions: list = []):
         """
