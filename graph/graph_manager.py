@@ -9,7 +9,7 @@ from langgraph.checkpoint.redis import RedisSaver
 from langgraph.store.redis import RedisStore
 from langgraph.runtime import Runtime
 from langgraph.checkpoint.memory import InMemorySaver
-from langgraph.types import interrupt
+from langgraph.types import interrupt, Command
 
 from state.state import InputState, OutputState
 from agents.sql_agent import SQLAgent
@@ -126,8 +126,9 @@ class WorkflowManager:
 
     def run_sql_agent(
             self, 
-            question: str, 
             db_type:str, 
+            question: str = "",
+            user_response: str = "",
             summarize: bool = False, 
             uuid: str = "",
             session_id: str = "SESS1",
@@ -152,11 +153,17 @@ class WorkflowManager:
             config: RunnableConfig = {"configurable": {"thread_id": session_id}} if session_id else None
             context = Context(user_id=user_id) if user_id else None
 
-            result =  app.invoke(
-                input={"question": question, "uuid": _uuid, "summarize": summarize, "mcp_server": db_type},
-                config=config,
-                context=context,
-            )
+            if user_response:
+                result = app.invoke(Command(resume=user_response), config=config, context=context)
+            else:
+                result =  app.invoke(
+                    input={"question": question, "uuid": _uuid, "summarize": summarize, "mcp_server": db_type},
+                    config=config,
+                    context=context,
+                )
+
+            if "__interrupt__" in result:
+                result["user_input_required"] = result["__interrupt__"][0].value
 
             print(f"\ngraph :: run_sql_agent :: result :: {result}")
             return result

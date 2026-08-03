@@ -22,13 +22,17 @@ class ApiServer(BaseHTTPRequestHandler):
                 body = {}
 
             q = (body.get("question") or "").strip()
+            intrpt = (body.get("user_response") or "").strip()
             summ = body.get("no_summary", False)
             db_type = body.get("db_type", MCP_DB_TYPE)
             session_id = body.get("session_id", "")
             user_id = body.get("user_id", "")
 
             # res = WorkflowManager().run_sql_agent(q, summarize_result=summ) if q else {"error": "no question"}
-            res = WorkflowManager().run_sql_agent(question=q, db_type=db_type, summarize=not summ) if q else {"error": "no question"}
+            if intrpt:
+                res = WorkflowManager().run_sql_agent(user_response=intrpt, db_type=db_type, summarize=not summ) if q else {"error": "no question"}
+            else:
+                res = WorkflowManager().run_sql_agent(question=q, db_type=db_type, summarize=not summ) if q else {"error": "no question"}
             payload = json.dumps(res, default=str).encode()
             try:
                 self.send_response(200); self.send_header("Content-Type", "application/json")
