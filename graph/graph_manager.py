@@ -31,10 +31,7 @@ DIP_KEYWORDS = ("dip", "dips", "dipped", "drop", "dropped", "surge", "spike",
 def get_query_type(state: dict, runtime: Runtime[Context]) -> str:
     print(f"\nget_query_type :: state :: {state}")
 
-    is_approved = interrupt({
-        "question": "Do you want to proceed with this action?",
-        # "details": state["action_details"]
-    })
+    is_approved = interrupt("Do you want to proceed with this action?")
 
     try:
         memories = read_from_store(
@@ -162,8 +159,9 @@ class WorkflowManager:
                     context=context,
                 )
 
-            if "__interrupt__" in result:
-                result["user_input_required"] = result["__interrupt__"][0].value
+            snapshot = app.get_state(config)
+            if snapshot.interrupts:
+                result["user_input_required"] = snapshot.interrupts[0].value
 
             print(f"\ngraph :: run_sql_agent :: result :: {result}")
             return result
