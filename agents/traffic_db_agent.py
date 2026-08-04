@@ -2,6 +2,7 @@ import json
 
 from langgraph.types import Command
 from langchain.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage
+from langgraph.runtime import Runtime
 
 from database.db_manager import DatabaseManager
 from models.llm_manager import LLMManager_REST
@@ -9,6 +10,7 @@ from utils.skill_loader import get_skills_content
 from utils.summarizer import get_summarize_prompt, fallback_summarize
 from config import CHART_INTENT_ALIASES, MCP_DB_TYPE, BUSINESS_FACTS, \
 SUMMARY_MODEL, SQL_MODEL, TRAFFIC_TABLE_NAME, QA_MAX_REPAIRS
+from utils.context import Context
 
 
 # Miscellaneous Query Modification Logic
@@ -181,8 +183,9 @@ class TrafficAgent:
             }
 
 
-    def warmup(self, state: dict) -> dict:
+    def warmup(self, state: dict, runtime: Runtime[Context]) -> dict:
         print(f"\ntraffic_agent :: warmup :: state :: {state}")
+        print(f"\ntraffic_agent :: warmup :: UID :: {runtime.context.user_id}")
         intent = intent_tag(state["question"])
 
         self.llm_manager_rest.call(warmup=True)

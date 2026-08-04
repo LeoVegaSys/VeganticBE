@@ -17,7 +17,7 @@ from agents.dip_agent import DipAgent
 from graph.traffic_graph_manager import TrafficWorkflowManager
 from data_formatter import DataFormatter
 from utils.context import Context
-from utils.store import write_entry_to_store, read_from_store, get_store_config
+from utils.store import write_entry_to_store, read_from_store, get_store_config, manage_store
 
 from config import REDIS_HOST, REDIS_PORT
 
@@ -34,8 +34,10 @@ def get_query_type(state: dict, runtime: Runtime[Context]) -> str:
     is_approved = interrupt("Do you want to proceed with this action?")
 
     try:
+        manage_store(user_id=runtime.context.user_id)
+        
         memories = read_from_store(
-            store=runtime.store, user_id=runtime.context.user_id, category="memories", 
+            user_id=runtime.context.user_id, category="memories", 
             params=["question", "answer"]
         )
         if memories:
@@ -43,7 +45,7 @@ def get_query_type(state: dict, runtime: Runtime[Context]) -> str:
             print(f"NS :: {'memories', runtime.context.user_id} :: MemLen :: {len(memories)} :: Memory : {memory}")
 
         write_entry_to_store(
-            store=runtime.store, user_id=runtime.context.user_id, category="memories",
+            user_id=runtime.context.user_id, category="memories",
             param="question", data=json.dumps(state["question"])
         )
     except Exception as e:
@@ -64,7 +66,7 @@ def call_traffic_graph(state: InputState, runtime: Runtime[Context]):
         request_id=state["uuid"], mcp_server=state["mcp_server"])
     
     write_entry_to_store(
-        store=runtime.store, user_id=runtime.context.user_id, category="memories",
+        user_id=runtime.context.user_id, category="memories",
         param="answer", data=json.dumps(result)
     )
     print(f"\ntrafficGraph :: call_traffic_graph :: result :: {result}")

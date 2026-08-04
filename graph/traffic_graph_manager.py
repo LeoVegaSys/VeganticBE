@@ -29,11 +29,11 @@ class TrafficWorkflowManager:
         return workflow
     
     def returnGraph(self):
-        return self.create_workflow().compile()
+        return self.create_workflow().compile(checkpointer=True)
     
     def run_traffic_agent(self, question: str, mcp_server:str, summarize: bool, request_id: str) -> dict:
         print(f"\nTrafficGraph :: run_traffic_agent :: Q {question} :: DT {mcp_server} :: SMR {summarize} :: ID {request_id}")
-        app = self.create_workflow().compile()
+        app = self.create_workflow().compile(checkpointer=True)
         result = app.invoke(
             {"question": question, "summarize": summarize, "request_id": request_id, "mcp_server":mcp_server}
         )
