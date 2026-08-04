@@ -23,19 +23,22 @@ class ApiServer(BaseHTTPRequestHandler):
 
             q = (body.get("question") or "").strip()
             intrpt = (body.get("user_response") or "").strip()
-            
-            kwargs = {
-                "db_type": body.get("db_type", MCP_DB_TYPE),
-                "summarize": not (body.get("no_summary", False)),
-                "session_id": body.get("session_id", ""),
-                "user_id": body.get("user_id", ""),
-            }
+            db_type = body.get("db_type", MCP_DB_TYPE)
+            summ = body.get("no_summary", False)
+            session_id = body.get("session_id", "")
+            user_id = body.get("user_id", "")
 
             # res = WorkflowManager().run_sql_agent(q, summarize_result=summ) if q else {"error": "no question"}
             if intrpt:
-                res = WorkflowManager().run_sql_agent(user_response=intrpt, **kwargs) if intrpt else {"error": "no response"}
+                # res = WorkflowManager().run_sql_agent(user_response=intrpt, **kwargs) if intrpt else {"error": "no response"}
+                res = WorkflowManager().run_sql_agent(
+                    user_response=intrpt, db_type=db_type, summarize=not summ, session_id=session_id, user_id=user_id
+                    ) if intrpt else {"error": "no response"}
             else:
-                res = WorkflowManager().run_sql_agent(question=q, **kwargs) if q else {"error": "no question"}
+                # res = WorkflowManager().run_sql_agent(question=q, **kwargs) if q else {"error": "no question"}
+                res = WorkflowManager().run_sql_agent(
+                    question=q, db_type=db_type, summarize=not summ, session_id=session_id, user_id=user_id
+                    ) if q else {"error": "no question"}
             payload = json.dumps(res, default=str).encode()
             try:
                 self.send_response(200); self.send_header("Content-Type", "application/json")
