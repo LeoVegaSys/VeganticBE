@@ -174,7 +174,8 @@ class TrafficAgent:
                 "summary": summary
                 }
         except Exception as e:
-            summary = fallback_summarize(state["results"])
+            rows=state["results"] if "results" in state else []
+            summary = fallback_summarize(rows)
             _error = f"LLM summary unavailable. Issue encountered : {e}"
             return {
                 "messages": AIMessage(content=summary),

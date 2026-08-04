@@ -22,7 +22,10 @@ def main():
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("question", nargs="*")
+    # ap.add_argument("question", nargs="*")
+    # ap.add_argument("user_response", nargs="*")
+    ap.add_argument("question", type=str)
+    ap.add_argument("user_response", type=str)
     ap.add_argument("--db", default=MCP_DB_PATH)
     ap.add_argument("--db-type", default=MCP_DB_TYPE)
     ap.add_argument("--json", action="store_true")
@@ -38,6 +41,8 @@ def main():
         sys.exit(f"DB not found: {DB_PATH} (set TRAFFIC_DB or --db)")
     if args.serve:
         serve(args.port); return
+    
+    '''TODO : Interrupt NOT integrated below'''
     q = " ".join(args.question).strip()
     graph = WorkflowManager()
     if not q:

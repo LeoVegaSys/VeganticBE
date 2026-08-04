@@ -29,8 +29,8 @@ def manage_store(user_id: str):
                 results = store.search(ns, limit=50)
                 print(f"store :: manage :: UID {user_id} :: NS {ns} :: LEN {len(results)}")
                 if len(results) > KEEP_THRESHOLD:
-                    sorted = sorted(results, key=lambda x: x.updated_at)
-                    for s in sorted[KEEP_FIRST_N: -KEEP_LAST_N]:
+                    r_sorted = sorted(results, key=lambda x: x.updated_at)
+                    for s in r_sorted[KEEP_FIRST_N: -KEEP_LAST_N]:
                         store.delete(ns, key=s.key)
         
     except Exception as e:
