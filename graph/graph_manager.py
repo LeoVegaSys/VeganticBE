@@ -19,7 +19,7 @@ from data_formatter import DataFormatter
 from utils.context import Context
 from utils.store import write_entry_to_store, read_from_store, get_store_config, manage_store
 
-from config import REDIS_HOST, REDIS_PORT
+from config import REDIS_HOST, REDIS_PORT, HISTORY
 
 
 ## Sub-graph routing paramters
@@ -37,7 +37,7 @@ def get_query_type(state: dict, runtime: Runtime[Context]) -> str:
         manage_store(user_id=runtime.context.user_id)
         
         memories = read_from_store(
-            user_id=runtime.context.user_id, category="memories", 
+            user_id=runtime.context.user_id, category=HISTORY, 
             params=["question", "answer"]
         )
         if memories:
@@ -45,7 +45,7 @@ def get_query_type(state: dict, runtime: Runtime[Context]) -> str:
             print(f"NS :: {'memories', runtime.context.user_id} :: MemLen :: {len(memories)} :: Memory : {memory}")
 
         write_entry_to_store(
-            user_id=runtime.context.user_id, category="memories",
+            user_id=runtime.context.user_id, category=HISTORY,
             param="question", data=json.dumps(state["question"])
         )
     except Exception as e:

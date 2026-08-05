@@ -1,9 +1,8 @@
-from uuid import uuid4
-
 from langgraph.store.redis import RedisStore
 
 from config import REDIS_HOST, REDIS_PORT, REDIS_TTL, \
-    KEEP_FIRST_N, KEEP_LAST_N, KEEP_THRESHOLD
+    KEEP_FIRST_N, KEEP_LAST_N, KEEP_THRESHOLD, \
+    HISTORY, WARMUP
 
 
 REDIS_STORE_URI = f"redis://{REDIS_HOST}:{REDIS_PORT}"
@@ -38,7 +37,8 @@ def manage_store(user_id: str):
         return False
 
 
-def write_entry_to_store(user_id:str, category: str, param:str, data: str):
+def write_entry_to_store(user_id: str, category: str, param: str, data: str):
+    from uuid import uuid4
     try:
         with RedisStore.from_conn_string(REDIS_STORE_URI) as store:
             store.put(
@@ -47,7 +47,7 @@ def write_entry_to_store(user_id:str, category: str, param:str, data: str):
                 value={param : data}
             )
     except Exception as e:
-        print(f"Error occurred during store read : {str(e)}")
+        print(f"Error occurred during store write : {str(e)}")
 
 
 def clear_store(user_id: str):
@@ -83,3 +83,35 @@ def read_from_store(user_id: str, category: str, params: list[str]) -> list[dict
     except Exception as e:
         print(f"Error occurred during store write : {str(e)}")
         return []
+
+
+def get_conversation_history(user_id: str, params: list[str]) -> str:
+    """
+    Returns key-value pairs in flattened string, stored as part of previous conversations 
+    """
+    import json
+    history = ""
+    if not warmup_done(user_id):
+        memories = read_from_store(user_id=user_id, category=HISTORY, params=params)
+        if memories:
+            history = "\n".join([f"{k.upper()}:{v}" for m in memories for k,v in m.items()])
+        print(f"GCM :: store :: {'memories', user_id} :: MemLen :: {len(memories)}")
+        write_entry_to_store(user_id=user_id, category=WARMUP, param="warmup", data=json.loads(True))
+    return history
+
+
+def warmup_done(user_id: str):
+    """Returns True if warmup has been performed in last 30 mins"""
+    from datetime import datetime
+
+    warmup_done = read_from_store(user_id=user_id, category=WARMUP)
+    if warmup_done:
+        print("Warmup already completed for user {user_id}.")
+        last_run = warmup_done[0].updated_at.replace(tzinfo=None)
+        mins_since_last_run = ((datetime.now() - last_run).total_seconds())//60
+        if mins_since_last_run > 30:
+            print("Warmup completed for user {user_id} more than 30 mins ago.")
+            return False
+        return True
+    print("Warmup not completed for user {user_id}.")
+    return False
