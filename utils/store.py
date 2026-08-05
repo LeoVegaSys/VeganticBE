@@ -64,6 +64,10 @@ def clear_store(user_id: str):
 
 
 def read_from_store(user_id: str, category: str, params: list[str]) -> list[dict]:
+    """
+    If params is provided, Returns category records matching the list of text params.
+    If params is not provided, Returns all records for the category.
+    """
     result_set = []
     try:
         with RedisStore.from_conn_string(REDIS_STORE_URI) as store:
@@ -71,7 +75,10 @@ def read_from_store(user_id: str, category: str, params: list[str]) -> list[dict
             results = store.search(namespace, limit=50)
             print(f"store :: read :: UID {user_id} :: NS {namespace} :: LEN {len(results)}")
             if results:
-                result_set = [r.value for r in results for p in params if p in r.value]
+                if params:
+                    result_set = [r.value for r in results for p in params if p in r.value]
+                else:
+                    result_set = [r.value for r in results]
             return result_set
     except Exception as e:
         print(f"Error occurred during store write : {str(e)}")

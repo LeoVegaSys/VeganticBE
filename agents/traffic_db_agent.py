@@ -7,10 +7,12 @@ from langgraph.runtime import Runtime
 from database.db_manager import DatabaseManager
 from models.llm_manager import LLMManager_REST
 from utils.skill_loader import get_skills_content
-from utils.summarizer import get_summarize_prompt, fallback_summarize
+from utils.summarizer import get_summarize_prompt, fallback_summarize, \
+get_conversation_prompt
 from config import CHART_INTENT_ALIASES, MCP_DB_TYPE, BUSINESS_FACTS, \
 SUMMARY_MODEL, SQL_MODEL, TRAFFIC_TABLE_NAME, QA_MAX_REPAIRS
 from utils.context import Context
+from utils.store import read_from_store
 
 
 # Miscellaneous Query Modification Logic
@@ -189,7 +191,18 @@ class TrafficAgent:
         print(f"\ntraffic_agent :: warmup :: UID :: {runtime.context.user_id}")
         intent = intent_tag(state["question"])
 
-        self.llm_manager_rest.call(warmup=True)
+        memories = read_from_store(
+            user_id=runtime.context.user_id, category="memories", 
+            params=["question", "answer"]
+        )
+        if memories:
+            memory = "\n".join([f"\n{k.upper()}:{v}" for m in memories for k,v in m.items()])
+            print(f"WARMUP :: {'memories', runtime.context.user_id} :: MemLen :: {len(memories)}")
+
+        prompt = get_conversation_prompt(prev_conv=memory)
+
+        # self.llm_manager_rest.call(warmup=True)
+        self.llm_manager_rest.call(warmup=True, prompt=prompt)
         
         return {
             "messages" : HumanMessage(content=state["question"]),

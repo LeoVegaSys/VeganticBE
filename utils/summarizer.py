@@ -2,7 +2,7 @@ import json
 
 
 def get_summarize_prompt(state: dict) -> str:
-    preview = json.dumps(state["results"][:40], default=str)
+    preview = json.dumps(state["results"][:40], default=str) if "results" in state else ""
 
     return f"""You are a telecom NOC analyst. Answer the question from the result ONLY.
 Respond in ENGLISH, 2-4 sentences. Name the key entities with their numbers.
@@ -19,3 +19,8 @@ def fallback_summarize(rows: list) -> str:
     if not rows: 
         return "No matching rows."
     return f"Returned {len(rows)} row(s). Top row: {rows[0]}"
+
+
+def get_conversation_prompt(prev_conv: str) -> str:
+    return f"""
+You are a helpful assistant. Use this context: Relevant past information:\n\n{prev_conv}"""
