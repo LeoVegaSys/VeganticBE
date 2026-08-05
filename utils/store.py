@@ -50,10 +50,17 @@ def write_entry_to_store(user_id: str, category: str, param: str, data: str):
         print(f"Error occurred during store write : {str(e)}")
 
 
-def clear_store(user_id: str):
+def clear_store(user_id: str, category: str = ""):
+    """
+    If category is provided, deletes all category records ONLY for user.
+    If category is not provided, deletes all store records for ALL categories for user.
+    """
     try:
         with RedisStore.from_conn_string(REDIS_STORE_URI) as store:
-            namespaces = store.list_namespaces(suffix=(user_id,))
+            if category:
+                namespaces = [(category, user_id)]
+            else:
+                namespaces = store.list_namespaces(suffix=(user_id,))
             for ns in namespaces:
                 results = store.search(ns, limit=50)
                 print(f"store :: clear :: UID {user_id} :: NS {ns} :: LEN {len(results)}")
@@ -101,16 +108,19 @@ def get_conversation_history(user_id: str, params: list[str]) -> str:
 
 def warmup_done(user_id: str):
     """Returns True if warmup has been performed in last 30 mins"""
-    from datetime import datetime
-
+    from datetime import datetime, timezone
+    warmed_up = False
+    # Check if warmup prompt already loaded
     warmup_done = read_from_store(user_id=user_id, category=WARMUP)
     if warmup_done:
-        print("Warmup already completed for user {user_id}.")
-        last_run = warmup_done[0].updated_at.replace(tzinfo=None)
-        mins_since_last_run = ((datetime.now() - last_run).total_seconds())//60
+        last_run = warmup_done[0].updated_at.replace(tzinfo=timezone.utc)
+        mins_since_last_run = ((datetime.now(timezone.utc) - last_run).total_seconds())//60
         if mins_since_last_run > 30:
             print("Warmup completed for user {user_id} more than 30 mins ago.")
-            return False
-        return True
+        else:
+            print("Warmup already completed for user {user_id}.")
+            warmed_up = True
     print("Warmup not completed for user {user_id}.")
-    return False
+    if not warmed_up:   # CLEAR OLD WARMUP ENTRIES IF ANY
+        clear_store(user_id=user_id, category=WARMUP)
+    return warmed_up
