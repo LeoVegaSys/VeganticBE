@@ -2,7 +2,7 @@ from langgraph.store.redis import RedisStore
 
 from config import REDIS_HOST, REDIS_PORT, REDIS_TTL, \
     KEEP_FIRST_N, KEEP_LAST_N, KEEP_THRESHOLD, \
-    HISTORY, WARMUP
+    HISTORY, WARMUP, OLLAMA_KEEP_ALIVE
 
 
 REDIS_STORE_URI = f"redis://{REDIS_HOST}:{REDIS_PORT}"
@@ -113,14 +113,29 @@ def warmup_done(user_id: str):
     # Check if warmup prompt already loaded
     warmup_done = read_from_store(user_id=user_id, category=WARMUP)
     if warmup_done:
+        keep_alive_mins = get_keep_alive_in_mins()
         last_run = warmup_done[0].updated_at.replace(tzinfo=timezone.utc)
         mins_since_last_run = ((datetime.now(timezone.utc) - last_run).total_seconds())//60
-        if mins_since_last_run > 30:
-            print("Warmup completed for user {user_id} more than 30 mins ago.")
+        if mins_since_last_run > keep_alive_mins:
+            print(f"Warmup completed for user {user_id} more than {keep_alive_mins} mins ago.")
         else:
-            print("Warmup already completed for user {user_id}.")
+            print(f"Warmup already completed for user {user_id}.")
             warmed_up = True
-    print("Warmup not completed for user {user_id}.")
     if not warmed_up:   # CLEAR OLD WARMUP ENTRIES IF ANY
+        print(f"Warmup not completed for user {user_id}.")
         clear_store(user_id=user_id, category=WARMUP)
     return warmed_up
+
+
+def get_keep_alive_in_mins():
+    import re
+    units = {'s': 1, 'm': 60, 'h': 3600, 'd': 86400, 'w': 604800}
+    is_alphanum = any(c.isalpha() for c in OLLAMA_KEEP_ALIVE)
+    if is_alphanum:
+        total_seconds = sum(
+            int(value) * units[unit.lower()] 
+            for value, unit in re.findall(r'(\d+)([dhmshw])', OLLAMA_KEEP_ALIVE)
+        )
+        return (total_seconds//60)
+    else:
+        return int(OLLAMA_KEEP_ALIVE)
