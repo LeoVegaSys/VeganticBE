@@ -63,7 +63,7 @@ def clear_store(user_id: str):
         print(f"Error occurred during store read : {str(e)}")
 
 
-def read_from_store(user_id: str, category: str, params: list[str]) -> list[dict]:
+def read_from_store(user_id: str, category: str, params: list[str] = []) -> list[dict]:
     """
     If params is provided, Returns category records matching the list of text params.
     If params is not provided, Returns all records for the category.
@@ -76,9 +76,9 @@ def read_from_store(user_id: str, category: str, params: list[str]) -> list[dict
             print(f"store :: read :: UID {user_id} :: NS {namespace} :: LEN {len(results)}")
             if results:
                 if params:
-                    result_set = [r.value for r in results for p in params if p in r.value]
+                    result_set = [r for r in results for p in params if p in r.value]
                 else:
-                    result_set = [r.value for r in results]
+                    result_set = [r for r in results]
             return result_set
     except Exception as e:
         print(f"Error occurred during store write : {str(e)}")
@@ -89,14 +89,13 @@ def get_conversation_history(user_id: str, params: list[str]) -> str:
     """
     Returns key-value pairs in flattened string, stored as part of previous conversations 
     """
-    import json
     history = ""
     if not warmup_done(user_id):
         memories = read_from_store(user_id=user_id, category=HISTORY, params=params)
         if memories:
-            history = "\n".join([f"{k.upper()}:{v}" for m in memories for k,v in m.items()])
-        print(f"GCM :: store :: {'memories', user_id} :: MemLen :: {len(memories)}")
-        write_entry_to_store(user_id=user_id, category=WARMUP, param="warmup", data=json.loads(True))
+            history = "\n".join([f"{k.upper()}:{v}" for m in memories for k,v in m.value.items()])
+        print(f"GCM :: store :: {HISTORY}, {user_id} :: MemLen :: {len(memories)}")
+        write_entry_to_store(user_id=user_id, category=WARMUP, param="warmup", data="true")
     return history
 
 

@@ -41,7 +41,7 @@ def get_query_type(state: dict, runtime: Runtime[Context]) -> str:
             params=["question", "answer"]
         )
         if memories:
-            memory = "\n".join([f"\n{k.upper()}:{v}" for m in memories for k,v in m.items()])
+            memory = "\n".join([f"\n{k.upper()}:{v}" for m in memories for k,v in m.value.items()])
             print(f"NS :: {'memories', runtime.context.user_id} :: MemLen :: {len(memories)} :: Memory : {memory}")
 
         write_entry_to_store(
