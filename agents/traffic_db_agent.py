@@ -193,10 +193,10 @@ class TrafficAgent:
 
         memory = get_conversation_history(user_id=runtime.context.user_id, 
                                           params=["question", "answer"])
-        prompt = get_conversation_prompt(prev_conv=memory) if memory else None
-
-        # self.llm_manager_rest.call(warmup=True)
-        self.llm_manager_rest.call(warmup=True, prompt=prompt)
+        if memory:  # Run only if warmup is not performed
+            prompt = get_conversation_prompt(prev_conv=memory) if memory else None
+            # self.llm_manager_rest.call(warmup=True)
+            self.llm_manager_rest.call(warmup=True, prompt=prompt)
         
         return {
             "messages" : HumanMessage(content=state["question"]),
